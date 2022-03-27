@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -36,7 +36,7 @@ public final class StepHack extends Hack implements UpdateListener
 	
 	public StepHack()
 	{
-		super("Step", "Allows you to step up full blocks.");
+		super("Step");
 		setCategory(Category.MOVEMENT);
 		addSetting(mode);
 		addSetting(height);
@@ -72,8 +72,8 @@ public final class StepHack extends Hack implements UpdateListener
 		if(!player.horizontalCollision)
 			return;
 		
-		if(!player.onGround || player.isClimbing() || player.isTouchingWater()
-			|| player.isInLava())
+		if(!player.isOnGround() || player.isClimbing()
+			|| player.isTouchingWater() || player.isInLava())
 			return;
 		
 		if(player.input.movementForward == 0
@@ -85,18 +85,19 @@ public final class StepHack extends Hack implements UpdateListener
 		
 		Box box = player.getBoundingBox().offset(0, 0.05, 0).expand(0.05);
 		
-		if(!MC.world.doesNotCollide(player, box.offset(0, 1, 0)))
+		if(!MC.world.isSpaceEmpty(player, box.offset(0, 1, 0)))
 			return;
 		
 		double stepHeight = -1;
 		
-		ArrayList<Box> blockCollisions = MC.world
-			.getBlockCollisions(player, box).map(VoxelShape::getBoundingBox)
-			.collect(Collectors.toCollection(() -> new ArrayList<>()));
+		ArrayList<Box> blockCollisions =
+			IMC.getWorld().getBlockCollisionsStream(player, box)
+				.map(VoxelShape::getBoundingBox)
+				.collect(Collectors.toCollection(ArrayList::new));
 		
 		for(Box bb : blockCollisions)
-			if(bb.y2 > stepHeight)
-				stepHeight = bb.y2;
+			if(bb.maxY > stepHeight)
+				stepHeight = bb.maxY;
 			
 		stepHeight = stepHeight - player.getY();
 		
@@ -105,15 +106,15 @@ public final class StepHack extends Hack implements UpdateListener
 		
 		ClientPlayNetworkHandler netHandler = player.networkHandler;
 		
-		netHandler.sendPacket(new PlayerMoveC2SPacket.PositionOnly(
+		netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
 			player.getX(), player.getY() + 0.42 * stepHeight, player.getZ(),
-			player.onGround));
+			player.isOnGround()));
 		
-		netHandler.sendPacket(new PlayerMoveC2SPacket.PositionOnly(
+		netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(
 			player.getX(), player.getY() + 0.753 * stepHeight, player.getZ(),
-			player.onGround));
+			player.isOnGround()));
 		
-		player.updatePosition(player.getX(), player.getY() + 1 * stepHeight,
+		player.setPosition(player.getX(), player.getY() + 1 * stepHeight,
 			player.getZ());
 	}
 	

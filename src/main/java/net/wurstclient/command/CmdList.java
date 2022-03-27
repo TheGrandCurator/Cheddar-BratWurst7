@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -23,10 +23,13 @@ public final class CmdList
 	public final BindCmd bindCmd = new BindCmd();
 	public final BindsCmd bindsCmd = new BindsCmd();
 	public final BlinkCmd blinkCmd = new BlinkCmd();
+	public final BlockListCmd blockListCmd = new BlockListCmd();
 	public final ClearCmd clearCmd = new ClearCmd();
 	public final CopyItemCmd copyitemCmd = new CopyItemCmd();
 	public final DamageCmd damageCmd = new DamageCmd();
+	public final DigCmd digCmd = new DigCmd();
 	public final DropCmd dropCmd = new DropCmd();
+	public final EnabledHaxCmd enabledHaxCmd = new EnabledHaxCmd();
 	public final EnchantCmd enchantCmd = new EnchantCmd();
 	public final ExcavateCmd excavateCmd = new ExcavateCmd();
 	public final FeaturesCmd featuresCmd = new FeaturesCmd();
@@ -39,6 +42,7 @@ public final class CmdList
 	public final HelpCmd helpCmd = new HelpCmd();
 	public final InvseeCmd invseeCmd = new InvseeCmd();
 	public final IpCmd ipCmd = new IpCmd();
+	public final ItemListCmd itemListCmd = new ItemListCmd();
 	public final JumpCmd jumpCmd = new JumpCmd();
 	public final LeaveCmd leaveCmd = new LeaveCmd();
 	public final ModifyCmd modifyCmd = new ModifyCmd();
@@ -50,18 +54,23 @@ public final class CmdList
 	public final RvCmd rvCmd = new RvCmd();
 	public final SvCmd svCmd = new SvCmd();
 	public final SayCmd sayCmd = new SayCmd();
+	public final SetBlockCmd setBlockCmd = new SetBlockCmd();
 	public final SetCheckboxCmd setCheckboxCmd = new SetCheckboxCmd();
+	public final SetColorCmd setColorCmd = new SetColorCmd();
 	public final SetModeCmd setModeCmd = new SetModeCmd();
 	public final SetSliderCmd setSliderCmd = new SetSliderCmd();
+	public final SettingsCmd settingsCmd = new SettingsCmd();
 	public final TacoCmd tacoCmd = new TacoCmd();
 	public final TCmd tCmd = new TCmd();
-	public final UnbindCmd unbindCmd = new UnbindCmd();
+	public final TooManyHaxCmd tooManyHaxCmd = new TooManyHaxCmd();
 	public final TpCmd tpCmd = new TpCmd();
+	public final UnbindCmd unbindCmd = new UnbindCmd();
 	public final VClipCmd vClipCmd = new VClipCmd();
 	public final ViewNbtCmd viewNbtCmd = new ViewNbtCmd();
+	public final XrayCmd xrayCmd = new XrayCmd();
 	
 	private final TreeMap<String, Command> cmds =
-		new TreeMap<>((o1, o2) -> o1.compareToIgnoreCase(o2));
+		new TreeMap<>(String::compareToIgnoreCase);
 	
 	public CmdList()
 	{

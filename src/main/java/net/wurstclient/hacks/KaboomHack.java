@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -30,12 +30,7 @@ public final class KaboomHack extends Hack implements UpdateListener
 	
 	public KaboomHack()
 	{
-		super("Kaboom",
-			"Breaks blocks around you like an explosion.\n"
-				+ "This can be a lot faster than Nuker if the server doesn't\n"
-				+ "have NoCheat+.\n"
-				+ "It works best with fast tools and weak blocks.\n"
-				+ "Note: This is not an actual explosion.");
+		super("Kaboom");
 		
 		setCategory(Category.BLOCKS);
 		addSetting(power);
@@ -57,7 +52,7 @@ public final class KaboomHack extends Hack implements UpdateListener
 	public void onUpdate()
 	{
 		// check fly-kick
-		if(!MC.player.abilities.creativeMode && !MC.player.onGround)
+		if(!MC.player.getAbilities().creativeMode && !MC.player.isOnGround())
 			return;
 		
 		// do explosion particles
@@ -87,9 +82,9 @@ public final class KaboomHack extends Hack implements UpdateListener
 		BlockPos max = center.add(rangeI, rangeI, rangeI);
 		
 		return BlockUtils.getAllInBox(min, max).stream()
-			.filter(pos -> eyesVec.squaredDistanceTo(new Vec3d(pos)) <= rangeSq)
+			.filter(pos -> eyesVec.squaredDistanceTo(Vec3d.of(pos)) <= rangeSq)
 			.sorted(Comparator.comparingDouble(
-				pos -> -eyesVec.squaredDistanceTo(new Vec3d(pos))))
-			.collect(Collectors.toCollection(() -> new ArrayList<>()));
+				pos -> -eyesVec.squaredDistanceTo(Vec3d.of(pos))))
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 }

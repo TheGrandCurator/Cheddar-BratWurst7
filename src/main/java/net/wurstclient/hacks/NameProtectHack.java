@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -18,7 +18,7 @@ public final class NameProtectHack extends Hack
 {
 	public NameProtectHack()
 	{
-		super("NameProtect", "Hides all player names.");
+		super("NameProtect");
 		setCategory(Category.RENDER);
 	}
 	
@@ -45,7 +45,7 @@ public final class NameProtectHack extends Hack
 		for(AbstractClientPlayerEntity player : MC.world.getPlayers())
 		{
 			i++;
-			String name = player.getName().asString();
+			String name = player.getName().getString();
 			
 			if(string.contains(name))
 				return string.replace(name, "\u00a7oPlayer" + i + "\u00a7r");

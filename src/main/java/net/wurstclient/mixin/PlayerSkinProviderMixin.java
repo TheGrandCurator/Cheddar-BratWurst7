@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -23,6 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.minecraft.InsecureTextureException;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture;
@@ -34,7 +35,6 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.texture.PlayerSkinProvider;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
-import net.wurstclient.util.json.JsonUtils;
 
 @Mixin(PlayerSkinProvider.class)
 public class PlayerSkinProviderMixin
@@ -97,14 +97,14 @@ public class PlayerSkinProviderMixin
 			
 			MinecraftClient.getInstance().execute(() -> {
 				RenderSystem.recordRenderCall(() -> {
-					ImmutableList.of(Type.SKIN, Type.CAPE).forEach((type) -> {
+					ImmutableList.of(Type.SKIN, Type.CAPE).forEach(type -> {
 						if(map.containsKey(type))
 							loadSkin(map.get(type), type, callback);
 					});
 				});
 			});
 		};
-		Util.getServerWorkerExecutor().execute(runnable);
+		Util.getMainWorkerExecutor().execute(runnable);
 		
 		ci.cancel();
 	}
@@ -112,22 +112,29 @@ public class PlayerSkinProviderMixin
 	private void addWurstCape(GameProfile profile,
 		HashMap<MinecraftProfileTexture.Type, MinecraftProfileTexture> map)
 	{
+		String name = profile.getName();
+		String uuid = profile.getId().toString();
+		
 		try
 		{
 			if(capes == null)
 				setupWurstCapes();
 			
-			System.out.println(profile.getName());
-			if(capes.has(profile.getName()))
+			if(capes.has(name))
 			{
-				String capeURL = capes.get(profile.getName()).getAsString();
+				String capeURL = capes.get(name).getAsString();
+				map.put(Type.CAPE, new MinecraftProfileTexture(capeURL, null));
+				
+			}else if(capes.has(uuid))
+			{
+				String capeURL = capes.get(uuid).getAsString();
 				map.put(Type.CAPE, new MinecraftProfileTexture(capeURL, null));
 			}
 			
 		}catch(Exception e)
 		{
-			System.err.println(
-				"[Wurst] Failed to load cape for '" + profile.getName() + "'");
+			System.err.println("[Wurst] Failed to load cape for '" + name
+				+ "' (" + uuid + ")");
 			
 			e.printStackTrace();
 		}
@@ -140,9 +147,9 @@ public class PlayerSkinProviderMixin
 			// TODO: download capes to file
 			URL url = new URL("https://www.wurstclient.net/api/v1/capes.json");
 			
-			capes = JsonUtils.JSON_PARSER
-				.parse(new InputStreamReader(url.openStream()))
-				.getAsJsonObject();
+			capes =
+				JsonParser.parseReader(new InputStreamReader(url.openStream()))
+					.getAsJsonObject();
 			
 		}catch(Exception e)
 		{

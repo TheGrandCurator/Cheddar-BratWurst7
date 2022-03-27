@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -39,8 +39,7 @@ public final class GlideHack extends Hack implements UpdateListener
 	
 	public GlideHack()
 	{
-		super("Glide", "Makes you glide down slowly when falling.\n\n"
-			+ "\u00a7c\u00a7lWARNING:\u00a7r You will take fall damage if you don't use NoFall.");
+		super("Glide");
 		
 		setCategory(Category.MOVEMENT);
 		addSetting(fallSpeed);
@@ -66,7 +65,7 @@ public final class GlideHack extends Hack implements UpdateListener
 		ClientPlayerEntity player = MC.player;
 		Vec3d v = player.getVelocity();
 		
-		if(player.onGround || player.isTouchingWater() || player.isInLava()
+		if(player.isOnGround() || player.isTouchingWater() || player.isInLava()
 			|| player.isClimbing() || v.y >= 0)
 			return;
 		
@@ -74,11 +73,13 @@ public final class GlideHack extends Hack implements UpdateListener
 		{
 			Box box = player.getBoundingBox();
 			box = box.union(box.offset(0, -minHeight.getValue(), 0));
-			if(!MC.world.doesNotCollide(box))
+			if(!MC.world.isSpaceEmpty(box))
 				return;
 			
-			BlockPos min = new BlockPos(new Vec3d(box.x1, box.y1, box.z1));
-			BlockPos max = new BlockPos(new Vec3d(box.x2, box.y2, box.z2));
+			BlockPos min =
+				new BlockPos(new Vec3d(box.minX, box.minY, box.minZ));
+			BlockPos max =
+				new BlockPos(new Vec3d(box.maxX, box.maxY, box.maxZ));
 			Stream<BlockPos> stream = StreamSupport
 				.stream(BlockUtils.getAllInBox(min, max).spliterator(), true);
 			
@@ -89,6 +90,6 @@ public final class GlideHack extends Hack implements UpdateListener
 		}
 		
 		player.setVelocity(v.x, Math.max(v.y, -fallSpeed.getValue()), v.z);
-		player.flyingSpeed *= moveSpeed.getValueF();
+		player.airStrafingSpeed *= moveSpeed.getValueF();
 	}
 }

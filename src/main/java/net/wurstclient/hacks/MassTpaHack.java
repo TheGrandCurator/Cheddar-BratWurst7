@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.Random;
 
 import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.util.ChatUtil;
+import net.minecraft.util.StringHelper;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.events.ChatInputListener;
@@ -34,8 +34,7 @@ public final class MassTpaHack extends Hack
 	
 	public MassTpaHack()
 	{
-		super("MassTPA", "Sends a TPA request to all players.\n"
-			+ "Stops if someone accepts.");
+		super("MassTPA");
 		setCategory(Category.CHAT);
 	}
 	
@@ -51,7 +50,7 @@ public final class MassTpaHack extends Hack
 		for(PlayerListEntry info : MC.player.networkHandler.getPlayerList())
 		{
 			String name = info.getProfile().getName();
-			name = ChatUtil.stripTextFormat(name);
+			name = StringHelper.stripTextFormat(name);
 			
 			if(name.equalsIgnoreCase(playerName))
 				continue;
@@ -88,7 +87,10 @@ public final class MassTpaHack extends Hack
 		}
 		
 		if(index >= players.size())
+		{
 			setEnabled(false);
+			return;
+		}
 		
 		MC.player.sendChatMessage("/tpa " + players.get(index));
 		index++;
@@ -98,7 +100,7 @@ public final class MassTpaHack extends Hack
 	@Override
 	public void onReceivedMessage(ChatInputEvent event)
 	{
-		String message = event.getComponent().asString().toLowerCase();
+		String message = event.getComponent().getString().toLowerCase();
 		if(message.startsWith("\u00a7c[\u00a76wurst\u00a7c]"))
 			return;
 		

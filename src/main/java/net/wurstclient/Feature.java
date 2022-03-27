@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -10,10 +10,14 @@ package net.wurstclient;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.text.StringVisitable;
+import net.minecraft.text.Style;
 import net.wurstclient.event.EventManager;
 import net.wurstclient.keybinds.PossibleKeybind;
 import net.wurstclient.mixinterface.IMinecraftClient;
@@ -35,9 +39,24 @@ public abstract class Feature
 		getClass().isAnnotationPresent(SearchTags.class) ? String.join("\u00a7",
 			getClass().getAnnotation(SearchTags.class).value()) : "";
 	
+	private final boolean safeToBlock =
+		!getClass().isAnnotationPresent(DontBlock.class);
+	
 	public abstract String getName();
 	
 	public abstract String getDescription();
+	
+	public String getWrappedDescription(int width)
+	{
+		List<StringVisitable> lines = MC.textRenderer.getTextHandler()
+			.wrapLines(getDescription(), width, Style.EMPTY);
+		
+		StringJoiner joiner = new StringJoiner("\n");
+		lines.stream().map(StringVisitable::getString)
+			.forEach(s -> joiner.add(s));
+		
+		return joiner.toString();
+	}
 	
 	public Category getCategory()
 	{
@@ -78,13 +97,18 @@ public abstract class Feature
 		possibleKeybinds.add(new PossibleKeybind(command, description));
 	}
 	
+	public final Set<PossibleKeybind> getPossibleKeybinds()
+	{
+		return Collections.unmodifiableSet(possibleKeybinds);
+	}
+	
 	public final String getSearchTags()
 	{
 		return searchTags;
 	}
 	
-	public final Set<PossibleKeybind> getPossibleKeybinds()
+	public final boolean isSafeToBlock()
 	{
-		return Collections.unmodifiableSet(possibleKeybinds);
+		return safeToBlock;
 	}
 }

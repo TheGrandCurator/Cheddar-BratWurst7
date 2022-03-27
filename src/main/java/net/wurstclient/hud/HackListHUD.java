@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -9,12 +9,12 @@ package net.wurstclient.hud;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
-
-import org.lwjgl.opengl.GL11;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.util.Window;
+import net.minecraft.client.util.math.MatrixStack;
 import net.wurstclient.WurstClient;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
@@ -34,7 +34,7 @@ public final class HackListHUD implements UpdateListener
 		WurstClient.INSTANCE.getEventManager().add(UpdateListener.class, this);
 	}
 	
-	public void render(float partialTicks)
+	public void render(MatrixStack matrixStack, float partialTicks)
 	{
 		if(otf.getMode() == Mode.HIDDEN)
 			return;
@@ -53,39 +53,32 @@ public final class HackListHUD implements UpdateListener
 				| (int)(acColor[1] * 256) << 8 | (int)(acColor[2] * 256);
 			
 		}else
-			textColor = 0x04ffffff;
-		
-		GL11.glEnable(GL11.GL_TEXTURE_2D);
-		
-		// YesCheat+ mode indicator
-		// YesCheatSpf yesCheatSpf = WurstClient.INSTANCE.special.yesCheatSpf;
-		// if(yesCheatSpf.modeIndicator.isChecked())
-		// drawString("YesCheat+: " + yesCheatSpf.getProfile().getName());
+			textColor = 0x04000000 | otf.getColor();
 		
 		int height = posY + activeHax.size() * 9;
 		Window sr = WurstClient.MC.getWindow();
 		
 		if(otf.getMode() == Mode.COUNT || height > sr.getScaledHeight())
-			drawCounter();
+			drawCounter(matrixStack);
 		else
-			drawHackList(partialTicks);
+			drawHackList(matrixStack, partialTicks);
 	}
 	
-	private void drawCounter()
+	private void drawCounter(MatrixStack matrixStack)
 	{
 		long size = activeHax.stream().filter(e -> e.hack.isEnabled()).count();
 		String s = size + " hack" + (size != 1 ? "s" : "") + " active";
-		drawString(s);
+		drawString(matrixStack, s);
 	}
 	
-	private void drawHackList(float partialTicks)
+	private void drawHackList(MatrixStack matrixStack, float partialTicks)
 	{
 		if(otf.isAnimations())
 			for(HackListEntry e : activeHax)
-				drawWithOffset(e, partialTicks);
+				drawWithOffset(matrixStack, e, partialTicks);
 		else
 			for(HackListEntry e : activeHax)
-				drawString(e.hack.getRenderName());
+				drawString(matrixStack, e.hack.getRenderName());
 	}
 	
 	public void updateState(Hack hack)
@@ -99,15 +92,25 @@ public final class HackListHUD implements UpdateListener
 				return;
 			
 			activeHax.add(entry);
-			Collections.sort(activeHax);
+			sort();
 			
 		}else if(!otf.isAnimations())
 			activeHax.remove(entry);
 	}
 	
+	private void sort()
+	{
+		Comparator<HackListEntry> comparator =
+			Comparator.comparing(hle -> hle.hack, otf.getComparator());
+		Collections.sort(activeHax, comparator);
+	}
+	
 	@Override
 	public void onUpdate()
 	{
+		if(otf.shouldSort())
+			sort();
+		
 		if(!otf.isAnimations())
 			return;
 		
@@ -126,7 +129,7 @@ public final class HackListHUD implements UpdateListener
 		}
 	}
 	
-	private void drawString(String s)
+	private void drawString(MatrixStack matrixStack, String s)
 	{
 		TextRenderer tr = WurstClient.MC.textRenderer;
 		int posX;
@@ -136,18 +139,19 @@ public final class HackListHUD implements UpdateListener
 		else
 		{
 			int screenWidth = WurstClient.MC.getWindow().getScaledWidth();
-			int stringWidth = tr.getStringWidth(s);
+			int stringWidth = tr.getWidth(s);
 			
 			posX = screenWidth - stringWidth - 2;
 		}
 		
-		tr.draw(s, posX + 1, posY + 1, 0xff000000);
-		tr.draw(s, posX, posY, textColor | 0xff000000);
+		tr.draw(matrixStack, s, posX + 1, posY + 1, 0xff000000);
+		tr.draw(matrixStack, s, posX, posY, textColor | 0xff000000);
 		
 		posY += 9;
 	}
 	
-	private void drawWithOffset(HackListEntry e, float partialTicks)
+	private void drawWithOffset(MatrixStack matrixStack, HackListEntry e,
+		float partialTicks)
 	{
 		TextRenderer tr = WurstClient.MC.textRenderer;
 		String s = e.hack.getRenderName();
@@ -161,20 +165,19 @@ public final class HackListHUD implements UpdateListener
 		else
 		{
 			int screenWidth = WurstClient.MC.getWindow().getScaledWidth();
-			int stringWidth = tr.getStringWidth(s);
+			int stringWidth = tr.getWidth(s);
 			
 			posX = screenWidth - stringWidth - 2 + 5 * offset;
 		}
 		
 		int alpha = (int)(255 * (1 - offset / 4)) << 24;
-		tr.draw(s, posX + 1, posY + 1, 0x04000000 | alpha);
-		tr.draw(s, posX, posY, textColor | alpha);
+		tr.draw(matrixStack, s, posX + 1, posY + 1, 0x04000000 | alpha);
+		tr.draw(matrixStack, s, posX, posY, textColor | alpha);
 		
 		posY += 9;
 	}
 	
 	private static final class HackListEntry
-		implements Comparable<HackListEntry>
 	{
 		private final Hack hack;
 		private int offset;
@@ -188,15 +191,10 @@ public final class HackListHUD implements UpdateListener
 		}
 		
 		@Override
-		public int compareTo(HackListEntry o)
-		{
-			return hack.getRenderName()
-				.compareToIgnoreCase(o.hack.getRenderName());
-		}
-		
-		@Override
 		public boolean equals(Object obj)
 		{
+			// do not use Java 16 syntax here,
+			// it breaks Eclipse's Clean Up feature
 			if(!(obj instanceof HackListEntry))
 				return false;
 			

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -16,10 +16,9 @@ public final class NameTagsHack extends Hack
 {
 	public NameTagsHack()
 	{
-		super("NameTags", "Changes the scale of the nametags so you can\n"
-			+ "always read them.\n" + "Also allows you to see the nametags of\n"
-			+ "sneaking players.");
-		
+		super("NameTags");
 		setCategory(Category.RENDER);
 	}
+	
+	// See EntityRendererMixin.wurstRenderLabelIfPresent()
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -10,17 +10,39 @@ package net.wurstclient.altmanager.screens;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.BufferRenderer;
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.Tessellator;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.OrderedText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.Matrix4f;
 import net.wurstclient.WurstClient;
 import net.wurstclient.altmanager.AltRenderer;
 import net.wurstclient.altmanager.NameGenerator;
@@ -32,7 +54,7 @@ public abstract class AltEditorScreen extends Screen
 	
 	protected final Screen prevScreen;
 	
-	private TextFieldWidget emailBox;
+	private TextFieldWidget nameOrEmailBox;
 	private TextFieldWidget passwordBox;
 	
 	private ButtonWidget doneButton;
@@ -50,42 +72,47 @@ public abstract class AltEditorScreen extends Screen
 	@Override
 	public final void init()
 	{
-		addButton(
-			doneButton = new ButtonWidget(width / 2 - 100, height / 4 + 72 + 12,
-				200, 20, getDoneButtonText(), b -> pressDoneButton()));
+		addDrawableChild(doneButton =
+			new ButtonWidget(width / 2 - 100, height / 4 + 72 + 12, 200, 20,
+				new LiteralText(getDoneButtonText()), b -> pressDoneButton()));
 		
-		addButton(new ButtonWidget(width / 2 - 100, height / 4 + 120 + 12, 200,
-			20, "Cancel", b -> minecraft.openScreen(prevScreen)));
+		addDrawableChild(
+			new ButtonWidget(width / 2 - 100, height / 4 + 120 + 12, 200, 20,
+				new LiteralText("Cancel"), b -> client.setScreen(prevScreen)));
 		
-		addButton(new ButtonWidget(width / 2 - 100, height / 4 + 96 + 12, 200,
-			20, "Random Name",
-			b -> emailBox.setText(NameGenerator.generateName())));
+		addDrawableChild(new ButtonWidget(width / 2 - 100, height / 4 + 96 + 12,
+			200, 20, new LiteralText("Random Name"),
+			b -> nameOrEmailBox.setText(NameGenerator.generateName())));
 		
-		addButton(stealSkinButton =
+		addDrawableChild(stealSkinButton =
 			new ButtonWidget(width - (width / 2 - 100) / 2 - 64, height - 32,
-				128, 20, "Steal Skin", b -> message = stealSkin(getEmail())));
+				128, 20, new LiteralText("Steal Skin"),
+				b -> message = stealSkin(getNameOrEmail())));
 		
-		addButton(new ButtonWidget((width / 2 - 100) / 2 - 64, height - 32, 128,
-			20, "Open Skin Folder", b -> openSkinFolder()));
+		addDrawableChild(
+			new ButtonWidget((width / 2 - 100) / 2 - 64, height - 32, 128, 20,
+				new LiteralText("Open Skin Folder"), b -> openSkinFolder()));
 		
-		emailBox = new TextFieldWidget(font, width / 2 - 100, 60, 200, 20, "");
-		emailBox.setMaxLength(48);
-		emailBox.setSelected(true);
-		emailBox.setText(getDefaultEmail());
-		children.add(emailBox);
+		nameOrEmailBox = new TextFieldWidget(textRenderer, width / 2 - 100, 60,
+			200, 20, new LiteralText(""));
+		nameOrEmailBox.setMaxLength(48);
+		nameOrEmailBox.setTextFieldFocused(true);
+		nameOrEmailBox.setText(getDefaultNameOrEmail());
+		addSelectableChild(nameOrEmailBox);
 		
-		passwordBox =
-			new TextFieldWidget(font, width / 2 - 100, 100, 200, 20, "");
+		passwordBox = new TextFieldWidget(textRenderer, width / 2 - 100, 100,
+			200, 20, new LiteralText(""));
 		passwordBox.setText(getDefaultPassword());
 		passwordBox.setRenderTextProvider((text, int_1) -> {
 			String stars = "";
 			for(int i = 0; i < text.length(); i++)
 				stars += "*";
-			return stars;
+			return OrderedText.styledForwardsVisitedString(stars, Style.EMPTY);
 		});
-		children.add(passwordBox);
+		passwordBox.setMaxLength(256);
+		addSelectableChild(passwordBox);
 		
-		setInitialFocus(emailBox);
+		setInitialFocus(nameOrEmailBox);
 	}
 	
 	private void openSkinFolder()
@@ -110,31 +137,38 @@ public abstract class AltEditorScreen extends Screen
 	@Override
 	public final void tick()
 	{
-		emailBox.tick();
+		nameOrEmailBox.tick();
 		passwordBox.tick();
 		
-		String email = emailBox.getText().trim();
-		boolean alex = email.equalsIgnoreCase("Alexander01998");
+		String nameOrEmail = nameOrEmailBox.getText().trim();
+		boolean alex = nameOrEmail.equalsIgnoreCase("Alexander01998");
 		
-		doneButton.active =
-			!email.isEmpty() && !(alex && passwordBox.getText().isEmpty());
+		doneButton.active = !nameOrEmail.isEmpty()
+			&& !(alex && passwordBox.getText().isEmpty());
 		
 		stealSkinButton.active = !alex;
 	}
 	
-	protected final String getEmail()
+	/**
+	 * @return the user-entered name or email. Cannot be empty when pressing the
+	 *         done button. Cannot be null.
+	 */
+	protected final String getNameOrEmail()
 	{
-		return emailBox.getText();
+		return nameOrEmailBox.getText();
 	}
 	
+	/**
+	 * @return the user-entered password. Can be empty. Cannot be null.
+	 */
 	protected final String getPassword()
 	{
 		return passwordBox.getText();
 	}
 	
-	protected String getDefaultEmail()
+	protected String getDefaultNameOrEmail()
 	{
-		return minecraft.getSession().getUsername();
+		return client.getSession().getUsername();
 	}
 	
 	protected String getDefaultPassword()
@@ -153,23 +187,131 @@ public abstract class AltEditorScreen extends Screen
 	
 	private final String stealSkin(String name)
 	{
-		String skin = name + ".png";
-		
-		URI u = URI.create("http://skins.minecraft.net/MinecraftSkins/")
-			.resolve(skin);
-		Path path = skinFolder.resolve(skin);
-		
 		createSkinFolder();
+		Path path = skinFolder.resolve(name + ".png");
 		
-		try(InputStream in = u.toURL().openStream())
+		try
 		{
-			Files.copy(in, path);
-			return "\u00a7a\u00a7lSaved skin as " + skin;
+			URL url = getSkinUrl(name);
+			
+			try(InputStream in = url.openStream())
+			{
+				Files.copy(in, path, StandardCopyOption.REPLACE_EXISTING);
+			}
+			
+			return "\u00a7a\u00a7lSaved skin as " + name + ".png";
 			
 		}catch(IOException e)
 		{
 			e.printStackTrace();
 			return "\u00a74\u00a7lSkin could not be saved.";
+			
+		}catch(NullPointerException e)
+		{
+			e.printStackTrace();
+			return "\u00a74\u00a7lPlayer does not exist.";
+		}
+	}
+	
+	/**
+	 * Returns the skin download URL for the given username.
+	 */
+	public URL getSkinUrl(String username) throws IOException
+	{
+		String uuid = getUUID(username);
+		JsonObject texturesValueJson = getTexturesValue(uuid);
+		
+		// Grab URL for skin
+		JsonObject tJObj = texturesValueJson.get("textures").getAsJsonObject();
+		JsonObject skinJObj = tJObj.get("SKIN").getAsJsonObject();
+		String skin = skinJObj.get("url").getAsString();
+		
+		return URI.create(skin).toURL();
+	}
+	
+	/**
+	 * Decodes the base64 textures value from {@link #getSessionJson(String)}.
+	 * Once decoded, it looks like this:
+	 *
+	 * <code><pre>
+	 * {
+	 *   "timestamp" : &lt;current time&gt;,
+	 *   "profileId" : "&lt;UUID&gt;",
+	 *   "profileName" : "&lt;username&gt;",
+	 *   "textures":
+	 *   {
+	 *     "SKIN":
+	 *     {
+	 *       "url": "http://textures.minecraft.net/texture/&lt;texture ID&gt;"
+	 *     }
+	 *   }
+	 * }
+	 * </pre></code>
+	 */
+	private JsonObject getTexturesValue(String uuid) throws IOException
+	{
+		JsonObject sessionJson = getSessionJson(uuid);
+		
+		JsonArray propertiesJson =
+			sessionJson.get("properties").getAsJsonArray();
+		JsonObject firstProperty = propertiesJson.get(0).getAsJsonObject();
+		String texturesBase64 = firstProperty.get("value").getAsString();
+		
+		byte[] texturesBytes = Base64.decodeBase64(texturesBase64.getBytes());
+		JsonObject texturesJson =
+			new Gson().fromJson(new String(texturesBytes), JsonObject.class);
+		
+		return texturesJson;
+	}
+	
+	/**
+	 * Grabs the JSON code from the session server. It looks something like
+	 * this:
+	 *
+	 * <code><pre>
+	 * {
+	 *   "id": "&lt;UUID&gt;",
+	 *   "name": "&lt;username&gt;",
+	 *   "properties":
+	 *   [
+	 *     {
+	 *       "name": "textures",
+	 *       "value": "&lt;base64 encoded JSON&gt;"
+	 *     }
+	 *   ]
+	 * }
+	 * </pre></code>
+	 */
+	private JsonObject getSessionJson(String uuid) throws IOException
+	{
+		URL sessionURL = URI
+			.create(
+				"https://sessionserver.mojang.com/session/minecraft/profile/")
+			.resolve(uuid).toURL();
+		
+		try(InputStream sessionInputStream = sessionURL.openStream())
+		{
+			return new Gson().fromJson(
+				IOUtils.toString(sessionInputStream, StandardCharsets.UTF_8),
+				JsonObject.class);
+		}
+	}
+	
+	private String getUUID(String username) throws IOException
+	{
+		URL profileURL =
+			URI.create("https://api.mojang.com/users/profiles/minecraft/")
+				.resolve(URLEncoder.encode(username, "UTF-8")).toURL();
+		
+		try(InputStream profileInputStream = profileURL.openStream())
+		{
+			// {"name":"<username>","id":"<UUID>"}
+			
+			JsonObject profileJson = new Gson().fromJson(
+				IOUtils.toString(profileInputStream, StandardCharsets.UTF_8),
+				JsonObject.class);
+			
+			return profileJson.get("id").getAsString();
 		}
 	}
 	
@@ -185,59 +327,71 @@ public abstract class AltEditorScreen extends Screen
 	@Override
 	public boolean mouseClicked(double x, double y, int button)
 	{
-		emailBox.mouseClicked(x, y, button);
+		nameOrEmailBox.mouseClicked(x, y, button);
 		passwordBox.mouseClicked(x, y, button);
 		
-		if(emailBox.isFocused() || passwordBox.isFocused())
+		if(nameOrEmailBox.isFocused() || passwordBox.isFocused())
 			message = "";
 		
 		return super.mouseClicked(x, y, button);
 	}
 	
 	@Override
-	public void render(int mouseX, int mouseY, float partialTicks)
+	public void render(MatrixStack matrixStack, int mouseX, int mouseY,
+		float partialTicks)
 	{
-		renderBackground();
+		renderBackground(matrixStack);
+		
+		Matrix4f matrix = matrixStack.peek().getPositionMatrix();
+		BufferBuilder bufferBuilder = Tessellator.getInstance().getBuffer();
+		RenderSystem.setShader(GameRenderer::getPositionShader);
 		
 		// skin preview
-		AltRenderer.drawAltBack(emailBox.getText(), (width / 2 - 100) / 2 - 64,
-			height / 2 - 128, 128, 256);
-		AltRenderer.drawAltBody(emailBox.getText(),
+		AltRenderer.drawAltBack(matrixStack, nameOrEmailBox.getText(),
+			(width / 2 - 100) / 2 - 64, height / 2 - 128, 128, 256);
+		AltRenderer.drawAltBody(matrixStack, nameOrEmailBox.getText(),
 			width - (width / 2 - 100) / 2 - 64, height / 2 - 128, 128, 256);
 		
 		// text
-		drawString(font, "Name or E-Mail", width / 2 - 100, 47, 10526880);
-		drawString(font, "Password", width / 2 - 100, 87, 10526880);
-		drawCenteredString(font, message, width / 2, 142, 16777215);
+		drawStringWithShadow(matrixStack, textRenderer,
+			"Name (for cracked alts), or", width / 2 - 100, 37, 10526880);
+		drawStringWithShadow(matrixStack, textRenderer,
+			"E-Mail (for premium alts)", width / 2 - 100, 47, 10526880);
+		drawStringWithShadow(matrixStack, textRenderer,
+			"Password (leave blank for cracked alts)", width / 2 - 100, 87,
+			10526880);
+		
+		String[] lines = message.split("\n");
+		for(int i = 0; i < lines.length; i++)
+			drawCenteredText(matrixStack, textRenderer, lines[i], width / 2,
+				142 + 10 * i, 16777215);
 		
 		// text boxes
-		emailBox.render(mouseX, mouseY, partialTicks);
-		passwordBox.render(mouseX, mouseY, partialTicks);
+		nameOrEmailBox.render(matrixStack, mouseX, mouseY, partialTicks);
+		passwordBox.render(matrixStack, mouseX, mouseY, partialTicks);
 		
 		// red flash for errors
 		if(errorTimer > 0)
 		{
-			GL11.glDisable(GL11.GL_TEXTURE_2D);
 			GL11.glDisable(GL11.GL_CULL_FACE);
 			GL11.glEnable(GL11.GL_BLEND);
 			
-			GL11.glColor4f(1, 0, 0, errorTimer / 16F);
+			RenderSystem.setShaderColor(1, 0, 0, errorTimer / 16F);
 			
-			GL11.glBegin(GL11.GL_QUADS);
-			{
-				GL11.glVertex2d(0, 0);
-				GL11.glVertex2d(width, 0);
-				GL11.glVertex2d(width, height);
-				GL11.glVertex2d(0, height);
-			}
-			GL11.glEnd();
+			bufferBuilder.begin(VertexFormat.DrawMode.QUADS,
+				VertexFormats.POSITION);
+			bufferBuilder.vertex(matrix, 0, 0, 0).next();
+			bufferBuilder.vertex(matrix, width, 0, 0).next();
+			bufferBuilder.vertex(matrix, width, height, 0).next();
+			bufferBuilder.vertex(matrix, 0, height, 0).next();
+			bufferBuilder.end();
+			BufferRenderer.draw(bufferBuilder);
 			
-			GL11.glEnable(GL11.GL_TEXTURE_2D);
 			GL11.glEnable(GL11.GL_CULL_FACE);
 			GL11.glDisable(GL11.GL_BLEND);
 			errorTimer--;
 		}
 		
-		super.render(mouseX, mouseY, partialTicks);
+		super.render(matrixStack, mouseX, mouseY, partialTicks);
 	}
 }

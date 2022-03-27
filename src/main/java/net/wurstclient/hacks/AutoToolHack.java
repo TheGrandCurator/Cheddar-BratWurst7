@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -48,8 +48,7 @@ public final class AutoToolHack extends Hack
 	
 	public AutoToolHack()
 	{
-		super("AutoTool", "Automatically equips the fastest applicable tool\n"
-			+ "in your hotbar when you try to break a block.");
+		super("AutoTool");
 		
 		setCategory(Category.BLOCKS);
 		addSetting(useSwords);
@@ -81,7 +80,7 @@ public final class AutoToolHack extends Hack
 			return;
 		
 		if(prevSelectedSlot == -1)
-			prevSelectedSlot = MC.player.inventory.selectedSlot;
+			prevSelectedSlot = MC.player.getInventory().selectedSlot;
 		
 		equipBestTool(pos, useSwords.isChecked(), useHands.isChecked(),
 			repairMode.isChecked());
@@ -94,7 +93,7 @@ public final class AutoToolHack extends Hack
 			return;
 		
 		if(switchBack.isChecked())
-			MC.player.inventory.selectedSlot = prevSelectedSlot;
+			MC.player.getInventory().selectedSlot = prevSelectedSlot;
 		
 		prevSelectedSlot = -1;
 	}
@@ -112,7 +111,7 @@ public final class AutoToolHack extends Hack
 		boolean repairMode)
 	{
 		ClientPlayerEntity player = MC.player;
-		if(player.abilities.creativeMode)
+		if(player.getAbilities().creativeMode)
 			return;
 		
 		int bestSlot = getBestSlot(pos, useSwords, repairMode);
@@ -129,21 +128,18 @@ public final class AutoToolHack extends Hack
 			}
 			
 			if(useHands && isWrongTool(heldItem, pos))
-			{
 				selectFallbackSlot();
-				return;
-			}
 			
 			return;
 		}
 		
-		player.inventory.selectedSlot = bestSlot;
+		player.getInventory().selectedSlot = bestSlot;
 	}
 	
 	private int getBestSlot(BlockPos pos, boolean useSwords, boolean repairMode)
 	{
 		ClientPlayerEntity player = MC.player;
-		PlayerInventory inventory = player.inventory;
+		PlayerInventory inventory = player.getInventory();
 		ItemStack heldItem = MC.player.getMainHandStack();
 		
 		BlockState state = BlockUtils.getState(pos);
@@ -155,7 +151,7 @@ public final class AutoToolHack extends Hack
 			if(slot == inventory.selectedSlot)
 				continue;
 			
-			ItemStack stack = inventory.getInvStack(slot);
+			ItemStack stack = inventory.getStack(slot);
 			
 			float speed = getMiningSpeed(stack, state);
 			if(speed <= bestSpeed)
@@ -176,7 +172,7 @@ public final class AutoToolHack extends Hack
 	
 	private float getMiningSpeed(ItemStack stack, BlockState state)
 	{
-		float speed = stack.getMiningSpeed(state);
+		float speed = stack.getMiningSpeedMultiplier(state);
 		
 		if(speed > 1)
 		{
@@ -208,7 +204,7 @@ public final class AutoToolHack extends Hack
 	private void selectFallbackSlot()
 	{
 		int fallbackSlot = getFallbackSlot();
-		PlayerInventory inventory = MC.player.inventory;
+		PlayerInventory inventory = MC.player.getInventory();
 		
 		if(fallbackSlot == -1)
 		{
@@ -225,14 +221,14 @@ public final class AutoToolHack extends Hack
 	
 	private int getFallbackSlot()
 	{
-		PlayerInventory inventory = MC.player.inventory;
+		PlayerInventory inventory = MC.player.getInventory();
 		
 		for(int slot = 0; slot < 9; slot++)
 		{
 			if(slot == inventory.selectedSlot)
 				continue;
 			
-			ItemStack stack = inventory.getInvStack(slot);
+			ItemStack stack = inventory.getStack(slot);
 			
 			if(!isDamageable(stack))
 				return slot;

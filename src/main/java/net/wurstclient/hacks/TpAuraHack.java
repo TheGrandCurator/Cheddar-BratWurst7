@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -16,17 +16,19 @@ import java.util.stream.StreamSupport;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.mob.AmbientEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.WaterCreatureEntity;
-import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.Hand;
@@ -86,19 +88,27 @@ public final class TpAuraHack extends Hack implements UpdateListener
 		new CheckboxSetting("Filter pets",
 			"Won't attack tamed wolves,\n" + "tamed horses, etc.", false);
 	
-	private final CheckboxSetting filterVillagers = new CheckboxSetting(
-		"Filter villagers", "Won't attack villagers.", false);
+	private final CheckboxSetting filterTraders =
+		new CheckboxSetting("Filter traders",
+			"Won't attack villagers, wandering traders, etc.", false);
+	
 	private final CheckboxSetting filterGolems =
 		new CheckboxSetting("Filter golems",
 			"Won't attack iron golems,\n" + "snow golems and shulkers.", false);
 	
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't attack invisible entities.", false);
+	private final CheckboxSetting filterNamed = new CheckboxSetting(
+		"Filter named", "Won't attack name-tagged entities.", false);
+	
+	private final CheckboxSetting filterStands = new CheckboxSetting(
+		"Filter armor stands", "Won't attack armor stands.", false);
+	private final CheckboxSetting filterCrystals = new CheckboxSetting(
+		"Filter end crystals", "Won't attack end crystals.", false);
 	
 	public TpAuraHack()
 	{
-		super("TP-Aura", "Automatically attacks the closest valid entity\n"
-			+ "while teleporting around it.");
+		super("TP-Aura");
 		setCategory(Category.COMBAT);
 		
 		addSetting(range);
@@ -113,9 +123,12 @@ public final class TpAuraHack extends Hack implements UpdateListener
 		addSetting(filterAnimals);
 		addSetting(filterBabies);
 		addSetting(filterPets);
-		addSetting(filterVillagers);
+		addSetting(filterTraders);
 		addSetting(filterGolems);
 		addSetting(filterInvisible);
+		addSetting(filterNamed);
+		addSetting(filterStands);
+		addSetting(filterCrystals);
 	}
 	
 	@Override
@@ -123,6 +136,7 @@ public final class TpAuraHack extends Hack implements UpdateListener
 	{
 		// disable other killauras
 		WURST.getHax().clickAuraHack.setEnabled(false);
+		WURST.getHax().crystalAuraHack.setEnabled(false);
 		WURST.getHax().fightBotHack.setEnabled(false);
 		WURST.getHax().killauraLegitHack.setEnabled(false);
 		WURST.getHax().killauraHack.setEnabled(false);
@@ -146,14 +160,16 @@ public final class TpAuraHack extends Hack implements UpdateListener
 		
 		// set entity
 		double rangeSq = Math.pow(range.getValue(), 2);
-		Stream<LivingEntity> stream = StreamSupport
-			.stream(MC.world.getEntities().spliterator(), true)
-			.filter(e -> e instanceof LivingEntity).map(e -> (LivingEntity)e)
-			.filter(e -> !e.removed && e.getHealth() > 0)
-			.filter(e -> player.squaredDistanceTo(e) <= rangeSq)
-			.filter(e -> e != player)
-			.filter(e -> !(e instanceof FakePlayerEntity))
-			.filter(e -> !WURST.getFriends().contains(e.getEntityName()));
+		Stream<Entity> stream =
+			StreamSupport.stream(MC.world.getEntities().spliterator(), true)
+				.filter(e -> !e.isRemoved())
+				.filter(e -> e instanceof LivingEntity
+					&& ((LivingEntity)e).getHealth() > 0
+					|| e instanceof EndCrystalEntity)
+				.filter(e -> player.squaredDistanceTo(e) <= rangeSq)
+				.filter(e -> e != player)
+				.filter(e -> !(e instanceof FakePlayerEntity))
+				.filter(e -> !WURST.getFriends().contains(e.getEntityName()));
 		
 		if(filterPlayers.isChecked())
 			stream = stream.filter(e -> !(e instanceof PlayerEntity));
@@ -170,14 +186,14 @@ public final class TpAuraHack extends Hack implements UpdateListener
 				
 				Box box = e.getBoundingBox();
 				box = box.union(box.offset(0, -filterFlying.getValue(), 0));
-				return MC.world.doesNotCollide(box);
+				return !MC.world.isSpaceEmpty(box);
 			});
 		
 		if(filterMonsters.isChecked())
 			stream = stream.filter(e -> !(e instanceof Monster));
 		
 		if(filterPigmen.isChecked())
-			stream = stream.filter(e -> !(e instanceof ZombiePigmanEntity));
+			stream = stream.filter(e -> !(e instanceof ZombifiedPiglinEntity));
 		
 		if(filterEndermen.isChecked())
 			stream = stream.filter(e -> !(e instanceof EndermanEntity));
@@ -198,14 +214,23 @@ public final class TpAuraHack extends Hack implements UpdateListener
 				.filter(e -> !(e instanceof HorseBaseEntity
 					&& ((HorseBaseEntity)e).isTame()));
 		
-		if(filterVillagers.isChecked())
-			stream = stream.filter(e -> !(e instanceof VillagerEntity));
+		if(filterTraders.isChecked())
+			stream = stream.filter(e -> !(e instanceof MerchantEntity));
 		
 		if(filterGolems.isChecked())
 			stream = stream.filter(e -> !(e instanceof GolemEntity));
 		
 		if(filterInvisible.isChecked())
 			stream = stream.filter(e -> !e.isInvisible());
+		
+		if(filterNamed.isChecked())
+			stream = stream.filter(e -> !e.hasCustomName());
+		
+		if(filterStands.isChecked())
+			stream = stream.filter(e -> !(e instanceof ArmorStandEntity));
+		
+		if(filterCrystals.isChecked())
+			stream = stream.filter(e -> !(e instanceof EndCrystalEntity));
 		
 		Entity entity =
 			stream.min(priority.getSelected().comparator).orElse(null);
@@ -215,7 +240,7 @@ public final class TpAuraHack extends Hack implements UpdateListener
 		WURST.getHax().autoSwordHack.setSlot();
 		
 		// teleport
-		player.updatePosition(entity.getX() + random.nextInt(3) * 2 - 2,
+		player.setPosition(entity.getX() + random.nextInt(3) * 2 - 2,
 			entity.getY(), entity.getZ() + random.nextInt(3) * 2 - 2);
 		
 		// check cooldown
@@ -225,10 +250,11 @@ public final class TpAuraHack extends Hack implements UpdateListener
 		// attack entity
 		RotationUtils.Rotation rotations = RotationUtils
 			.getNeededRotations(entity.getBoundingBox().getCenter());
-		WurstClient.MC.player.networkHandler
-			.sendPacket(new PlayerMoveC2SPacket.LookOnly(rotations.getYaw(),
-				rotations.getPitch(), MC.player.onGround));
+		WurstClient.MC.player.networkHandler.sendPacket(
+			new PlayerMoveC2SPacket.LookAndOnGround(rotations.getYaw(),
+				rotations.getPitch(), MC.player.isOnGround()));
 		
+		WURST.getHax().criticalsHack.doCritical();
 		MC.interactionManager.attackEntity(player, entity);
 		player.swingHand(Hand.MAIN_HAND);
 	}
@@ -241,13 +267,13 @@ public final class TpAuraHack extends Hack implements UpdateListener
 			e -> RotationUtils
 				.getAngleToLookVec(e.getBoundingBox().getCenter())),
 		
-		HEALTH("Health", e -> e.getHealth());
+		HEALTH("Health", e -> e instanceof LivingEntity
+			? ((LivingEntity)e).getHealth() : Integer.MAX_VALUE);
 		
 		private final String name;
-		private final Comparator<LivingEntity> comparator;
+		private final Comparator<Entity> comparator;
 		
-		private Priority(String name,
-			ToDoubleFunction<LivingEntity> keyExtractor)
+		private Priority(String name, ToDoubleFunction<Entity> keyExtractor)
 		{
 			this.name = name;
 			comparator = Comparator.comparingDouble(keyExtractor);

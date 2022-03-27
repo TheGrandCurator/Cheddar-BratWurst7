@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -15,6 +15,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.text.LiteralText;
 
 public final class EnterProfileNameScreen extends Screen
@@ -39,18 +40,20 @@ public final class EnterProfileNameScreen extends Screen
 		int y1 = 60;
 		int y2 = height / 3 * 2;
 		
-		TextRenderer tr = minecraft.textRenderer;
+		TextRenderer tr = client.textRenderer;
 		
-		valueField = new TextFieldWidget(tr, x1, y1, 200, 20, "");
+		valueField =
+			new TextFieldWidget(tr, x1, y1, 200, 20, new LiteralText(""));
 		valueField.setText("");
 		valueField.setSelectionStart(0);
 		
-		children.add(valueField);
+		addSelectableChild(valueField);
 		setInitialFocus(valueField);
-		valueField.setSelected(true);
+		valueField.setTextFieldFocused(true);
 		
-		doneButton = new ButtonWidget(x1, y2, 200, 20, "Done", b -> done());
-		addButton(doneButton);
+		doneButton = new ButtonWidget(x1, y2, 200, 20, new LiteralText("Done"),
+			b -> done());
+		addDrawableChild(doneButton);
 	}
 	
 	private void done()
@@ -59,7 +62,7 @@ public final class EnterProfileNameScreen extends Screen
 		if(!value.isEmpty())
 			callback.accept(value);
 		
-		minecraft.openScreen(prevScreen);
+		client.setScreen(prevScreen);
 	}
 	
 	@Override
@@ -72,7 +75,7 @@ public final class EnterProfileNameScreen extends Screen
 			break;
 			
 			case GLFW.GLFW_KEY_ESCAPE:
-			minecraft.openScreen(prevScreen);
+			client.setScreen(prevScreen);
 			break;
 		}
 		
@@ -86,18 +89,19 @@ public final class EnterProfileNameScreen extends Screen
 	}
 	
 	@Override
-	public void render(int mouseX, int mouseY, float partialTicks)
+	public void render(MatrixStack matrixStack, int mouseX, int mouseY,
+		float partialTicks)
 	{
-		renderBackground();
-		drawCenteredString(minecraft.textRenderer, "Name your new profile",
-			width / 2, 20, 0xFFFFFF);
+		renderBackground(matrixStack);
+		drawCenteredText(matrixStack, client.textRenderer,
+			"Name your new profile", width / 2, 20, 0xFFFFFF);
 		
-		valueField.render(mouseX, mouseY, partialTicks);
-		super.render(mouseX, mouseY, partialTicks);
+		valueField.render(matrixStack, mouseX, mouseY, partialTicks);
+		super.render(matrixStack, mouseX, mouseY, partialTicks);
 	}
 	
 	@Override
-	public boolean isPauseScreen()
+	public boolean shouldPause()
 	{
 		return false;
 	}

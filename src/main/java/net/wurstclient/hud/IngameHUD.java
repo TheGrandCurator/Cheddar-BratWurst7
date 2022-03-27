@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -9,6 +9,9 @@ package net.wurstclient.hud;
 
 import org.lwjgl.opengl.GL11;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import net.minecraft.client.util.math.MatrixStack;
 import net.wurstclient.WurstClient;
 import net.wurstclient.clickgui.ClickGui;
 import net.wurstclient.clickgui.screens.ClickGuiScreen;
@@ -21,7 +24,7 @@ public final class IngameHUD implements GUIRenderListener
 	private TabGui tabGui;
 	
 	@Override
-	public void onRenderGUI(float partialTicks)
+	public void onRenderGUI(MatrixStack matrixStack, float partialTicks)
 	{
 		if(!WurstClient.INSTANCE.isEnabled())
 			return;
@@ -34,22 +37,20 @@ public final class IngameHUD implements GUIRenderListener
 		
 		// GL settings
 		GL11.glDisable(GL11.GL_CULL_FACE);
-		GL11.glDisable(GL11.GL_TEXTURE_2D);
 		
 		clickGui.updateColors();
 		
-		wurstLogo.render();
-		hackList.render(partialTicks);
-		tabGui.render(partialTicks);
+		wurstLogo.render(matrixStack);
+		hackList.render(matrixStack, partialTicks);
+		tabGui.render(matrixStack, partialTicks);
 		
 		// pinned windows
 		if(!(WurstClient.MC.currentScreen instanceof ClickGuiScreen))
-			clickGui.renderPinnedWindows(partialTicks);
+			clickGui.renderPinnedWindows(matrixStack, partialTicks);
 		
 		// GL resets
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
-		GL11.glEnable(GL11.GL_ALPHA_TEST);
-		GL11.glColor4f(1, 1, 1, 1);
+		RenderSystem.setShaderColor(1, 1, 1, 1);
 		
 		if(blend)
 			GL11.glEnable(GL11.GL_BLEND);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -12,19 +12,22 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
+import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.mob.AmbientEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.WaterCreatureEntity;
-import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -84,8 +87,9 @@ public final class ProtectHack extends Hack
 		new CheckboxSetting("Filter pets",
 			"Won't attack tamed wolves,\n" + "tamed horses, etc.", false);
 	
-	private final CheckboxSetting filterVillagers = new CheckboxSetting(
-		"Filter villagers", "Won't attack villagers.", false);
+	private final CheckboxSetting filterTraders =
+		new CheckboxSetting("Filter traders",
+			"Won't attack villagers, wandering traders, etc.", false);
 	
 	private final CheckboxSetting filterGolems =
 		new CheckboxSetting("Filter golems",
@@ -93,6 +97,13 @@ public final class ProtectHack extends Hack
 	
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't attack invisible entities.", false);
+	private final CheckboxSetting filterNamed = new CheckboxSetting(
+		"Filter named", "Won't attack name-tagged entities.", false);
+	
+	private final CheckboxSetting filterStands = new CheckboxSetting(
+		"Filter armor stands", "Won't attack armor stands.", false);
+	private final CheckboxSetting filterCrystals = new CheckboxSetting(
+		"Filter end crystals", "Won't attack end crystals.", true);
 	
 	private EntityPathFinder pathFinder;
 	private PathProcessor processor;
@@ -106,9 +117,7 @@ public final class ProtectHack extends Hack
 	
 	public ProtectHack()
 	{
-		super("Protect",
-			"A bot that follows the closest entity and protects it from other entities.\n"
-				+ "Use .protect to protect a specific entity instead of the closest one.");
+		super("Protect");
 		
 		setCategory(Category.COMBAT);
 		addSetting(useAi);
@@ -122,25 +131,31 @@ public final class ProtectHack extends Hack
 		addSetting(filterAnimals);
 		addSetting(filterBabies);
 		addSetting(filterPets);
-		addSetting(filterVillagers);
+		addSetting(filterTraders);
 		addSetting(filterGolems);
 		addSetting(filterInvisible);
+		addSetting(filterNamed);
+		addSetting(filterStands);
+		addSetting(filterCrystals);
 	}
 	
 	@Override
 	public String getRenderName()
 	{
 		if(friend != null)
-			return "Protecting " + friend.getName().asString();
-		else
-			return "Protect";
+			return "Protecting " + friend.getName().getString();
+		return "Protect";
 	}
 	
 	@Override
 	public void onEnable()
 	{
+		WURST.getHax().followHack.setEnabled(false);
+		WURST.getHax().tunnellerHack.setEnabled(false);
+		
 		// disable other killauras
 		WURST.getHax().clickAuraHack.setEnabled(false);
+		WURST.getHax().crystalAuraHack.setEnabled(false);
 		WURST.getHax().fightBotHack.setEnabled(false);
 		WURST.getHax().killauraLegitHack.setEnabled(false);
 		WURST.getHax().killauraHack.setEnabled(false);
@@ -154,7 +169,8 @@ public final class ProtectHack extends Hack
 			Stream<Entity> stream = StreamSupport
 				.stream(MC.world.getEntities().spliterator(), true)
 				.filter(e -> e instanceof LivingEntity)
-				.filter(e -> !e.removed && ((LivingEntity)e).getHealth() > 0)
+				.filter(
+					e -> !e.isRemoved() && ((LivingEntity)e).getHealth() > 0)
 				.filter(e -> e != MC.player)
 				.filter(e -> !(e instanceof FakePlayerEntity));
 			friend = stream
@@ -184,7 +200,7 @@ public final class ProtectHack extends Hack
 		
 		if(friend != null)
 		{
-			MC.options.keyForward.setPressed(false);
+			MC.options.forwardKey.setPressed(false);
 			friend = null;
 		}
 	}
@@ -193,7 +209,8 @@ public final class ProtectHack extends Hack
 	public void onUpdate()
 	{
 		// check if player died, friend died or disappeared
-		if(friend == null || friend.removed || !(friend instanceof LivingEntity)
+		if(friend == null || friend.isRemoved()
+			|| !(friend instanceof LivingEntity)
 			|| ((LivingEntity)friend).getHealth() <= 0
 			|| MC.player.getHealth() <= 0)
 		{
@@ -204,13 +221,15 @@ public final class ProtectHack extends Hack
 		}
 		
 		// set enemy
-		Stream<Entity> stream =
-			StreamSupport.stream(MC.world.getEntities().spliterator(), true)
-				.filter(e -> e instanceof LivingEntity)
-				.filter(e -> !e.removed && ((LivingEntity)e).getHealth() > 0)
-				.filter(e -> e != MC.player).filter(e -> e != friend)
-				.filter(e -> MC.player.distanceTo(e) <= 6)
-				.filter(e -> !(e instanceof FakePlayerEntity));
+		Stream<Entity> stream = StreamSupport
+			.stream(MC.world.getEntities().spliterator(), true)
+			.filter(e -> !e.isRemoved())
+			.filter(e -> e instanceof LivingEntity
+				&& ((LivingEntity)e).getHealth() > 0
+				|| e instanceof EndCrystalEntity)
+			.filter(e -> e != MC.player).filter(e -> e != friend)
+			.filter(e -> MC.player.distanceTo(e) <= 6)
+			.filter(e -> !(e instanceof FakePlayerEntity));
 		
 		if(filterPlayers.isChecked())
 			stream = stream.filter(e -> !(e instanceof PlayerEntity));
@@ -227,14 +246,14 @@ public final class ProtectHack extends Hack
 				
 				Box box = e.getBoundingBox();
 				box = box.union(box.offset(0, -filterFlying.getValue(), 0));
-				return MC.world.doesNotCollide(box);
+				return !MC.world.isSpaceEmpty(box);
 			});
 		
 		if(filterMonsters.isChecked())
 			stream = stream.filter(e -> !(e instanceof Monster));
 		
 		if(filterPigmen.isChecked())
-			stream = stream.filter(e -> !(e instanceof ZombiePigmanEntity));
+			stream = stream.filter(e -> !(e instanceof ZombifiedPiglinEntity));
 		
 		if(filterEndermen.isChecked())
 			stream = stream.filter(e -> !(e instanceof EndermanEntity));
@@ -255,14 +274,23 @@ public final class ProtectHack extends Hack
 				.filter(e -> !(e instanceof HorseBaseEntity
 					&& ((HorseBaseEntity)e).isTame()));
 		
-		if(filterVillagers.isChecked())
-			stream = stream.filter(e -> !(e instanceof VillagerEntity));
+		if(filterTraders.isChecked())
+			stream = stream.filter(e -> !(e instanceof MerchantEntity));
 		
 		if(filterGolems.isChecked())
 			stream = stream.filter(e -> !(e instanceof GolemEntity));
 		
 		if(filterInvisible.isChecked())
 			stream = stream.filter(e -> !e.isInvisible());
+		
+		if(filterNamed.isChecked())
+			stream = stream.filter(e -> !e.hasCustomName());
+		
+		if(filterStands.isChecked())
+			stream = stream.filter(e -> !(e instanceof ArmorStandEntity));
+		
+		if(filterCrystals.isChecked())
+			stream = stream.filter(e -> !(e instanceof EndCrystalEntity));
 		
 		enemy = stream
 			.min(
@@ -307,7 +335,7 @@ public final class ProtectHack extends Hack
 		}else
 		{
 			// jump if necessary
-			if(MC.player.horizontalCollision && MC.player.onGround)
+			if(MC.player.horizontalCollision && MC.player.isOnGround())
 				MC.player.jump();
 			
 			// swim up if necessary
@@ -315,27 +343,27 @@ public final class ProtectHack extends Hack
 				MC.player.addVelocity(0, 0.04, 0);
 			
 			// control height if flying
-			if(!MC.player.onGround
-				&& (MC.player.abilities.flying
+			if(!MC.player.isOnGround()
+				&& (MC.player.getAbilities().flying
 					|| WURST.getHax().flightHack.isEnabled())
 				&& MC.player.squaredDistanceTo(target.getX(), MC.player.getY(),
 					target.getZ()) <= MC.player.squaredDistanceTo(
 						MC.player.getX(), target.getY(), MC.player.getZ()))
 			{
 				if(MC.player.getY() > target.getY() + 1D)
-					MC.options.keySneak.setPressed(true);
+					MC.options.sneakKey.setPressed(true);
 				else if(MC.player.getY() < target.getY() - 1D)
-					MC.options.keyJump.setPressed(true);
+					MC.options.jumpKey.setPressed(true);
 			}else
 			{
-				MC.options.keySneak.setPressed(false);
-				MC.options.keyJump.setPressed(false);
+				MC.options.sneakKey.setPressed(false);
+				MC.options.jumpKey.setPressed(false);
 			}
 			
 			// follow target
 			WURST.getRotationFaker()
 				.faceVectorClient(target.getBoundingBox().getCenter());
-			MC.options.keyForward.setPressed(MC.player.distanceTo(
+			MC.options.forwardKey.setPressed(MC.player.distanceTo(
 				target) > (target == friend ? distanceF : distanceE));
 		}
 		
@@ -348,19 +376,21 @@ public final class ProtectHack extends Hack
 				return;
 			
 			// attack enemy
+			WURST.getHax().criticalsHack.doCritical();
 			MC.interactionManager.attackEntity(MC.player, enemy);
 			MC.player.swingHand(Hand.MAIN_HAND);
 		}
 	}
 	
 	@Override
-	public void onRender(float partialTicks)
+	public void onRender(MatrixStack matrixStack, float partialTicks)
 	{
 		if(!useAi.isChecked())
 			return;
 		
 		PathCmd pathCmd = WURST.getCmds().pathCmd;
-		pathFinder.renderPath(pathCmd.isDebugMode(), pathCmd.isDepthTest());
+		pathFinder.renderPath(matrixStack, pathCmd.isDebugMode(),
+			pathCmd.isDepthTest());
 	}
 	
 	public void setFriend(Entity friend)
@@ -375,7 +405,7 @@ public final class ProtectHack extends Hack
 		
 		public EntityPathFinder(Entity entity, double distance)
 		{
-			super(new BlockPos(entity));
+			super(new BlockPos(entity.getPos()));
 			this.entity = entity;
 			distanceSq = distance * distance;
 			setThinkTime(1);
@@ -384,8 +414,8 @@ public final class ProtectHack extends Hack
 		@Override
 		protected boolean checkDone()
 		{
-			return done = entity.squaredDistanceTo(
-				new Vec3d(current).add(0.5, 0.5, 0.5)) <= distanceSq;
+			return done =
+				entity.squaredDistanceTo(Vec3d.ofCenter(current)) <= distanceSq;
 		}
 		
 		@Override

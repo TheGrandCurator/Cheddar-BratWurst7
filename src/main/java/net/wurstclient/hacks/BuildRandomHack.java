@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -11,6 +11,10 @@ import java.util.Random;
 
 import org.lwjgl.opengl.GL11;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
@@ -19,7 +23,7 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.RayTraceContext;
+import net.minecraft.world.RaycastContext;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.events.RenderListener;
@@ -59,7 +63,7 @@ public final class BuildRandomHack extends Hack
 	
 	public BuildRandomHack()
 	{
-		super("BuildRandom", "Randomly places blocks around you.");
+		super("BuildRandom");
 		setCategory(Category.BLOCKS);
 		addSetting(mode);
 		addSetting(checkItem);
@@ -107,8 +111,9 @@ public final class BuildRandomHack extends Hack
 		do
 		{
 			// generate random position
-			pos = new BlockPos(MC.player).add(random.nextInt(bound) - range,
-				random.nextInt(bound) - range, random.nextInt(bound) - range);
+			pos = new BlockPos(MC.player.getPos()).add(
+				random.nextInt(bound) - range, random.nextInt(bound) - range,
+				random.nextInt(bound) - range);
 			attempts++;
 			
 		}while(attempts < 128 && !tryToPlaceBlock(legitMode, pos));
@@ -119,12 +124,12 @@ public final class BuildRandomHack extends Hack
 		if(!checkItem.isChecked())
 			return true;
 		
-		ItemStack stack = MC.player.inventory.getMainHandStack();
+		ItemStack stack = MC.player.getInventory().getMainHandStack();
 		return !stack.isEmpty() && stack.getItem() instanceof BlockItem;
 	}
 	
 	@Override
-	public void onRender(float partialTicks)
+	public void onRender(MatrixStack matrixStack, float partialTicks)
 	{
 		if(lastPos == null)
 			return;
@@ -133,32 +138,35 @@ public final class BuildRandomHack extends Hack
 		GL11.glEnable(GL11.GL_BLEND);
 		GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 		GL11.glEnable(GL11.GL_LINE_SMOOTH);
-		GL11.glLineWidth(2);
-		GL11.glDisable(GL11.GL_TEXTURE_2D);
 		GL11.glEnable(GL11.GL_CULL_FACE);
 		GL11.glDisable(GL11.GL_DEPTH_TEST);
 		
-		GL11.glPushMatrix();
-		RenderUtils.applyRenderOffset();
+		matrixStack.push();
+		RenderUtils.applyRegionalRenderOffset(matrixStack);
+		
+		BlockPos camPos = RenderUtils.getCameraBlockPos();
+		int regionX = (camPos.getX() >> 9) * 512;
+		int regionZ = (camPos.getZ() >> 9) * 512;
 		
 		// set position
-		GL11.glTranslated(lastPos.getX(), lastPos.getY(), lastPos.getZ());
+		matrixStack.translate(lastPos.getX() - regionX, lastPos.getY(),
+			lastPos.getZ() - regionZ);
 		
 		// get color
 		float red = partialTicks * 2F;
 		float green = 2 - red;
 		
 		// draw box
-		GL11.glColor4f(red, green, 0, 0.25F);
-		RenderUtils.drawSolidBox();
-		GL11.glColor4f(red, green, 0, 0.5F);
-		RenderUtils.drawOutlinedBox();
+		RenderSystem.setShader(GameRenderer::getPositionShader);
+		RenderSystem.setShaderColor(red, green, 0, 0.25F);
+		RenderUtils.drawSolidBox(matrixStack);
+		RenderSystem.setShaderColor(red, green, 0, 0.5F);
+		RenderUtils.drawOutlinedBox(matrixStack);
 		
-		GL11.glPopMatrix();
+		matrixStack.pop();
 		
 		// GL resets
 		GL11.glEnable(GL11.GL_DEPTH_TEST);
-		GL11.glEnable(GL11.GL_TEXTURE_2D);
 		GL11.glDisable(GL11.GL_BLEND);
 		GL11.glDisable(GL11.GL_LINE_SMOOTH);
 	}
@@ -172,16 +180,14 @@ public final class BuildRandomHack extends Hack
 		{
 			if(!placeBlockLegit(pos))
 				return false;
-			
-			IMC.setItemUseCooldown(4);
 		}else
 		{
 			if(!placeBlockSimple_old(pos))
 				return false;
 			
 			MC.player.swingHand(Hand.MAIN_HAND);
-			IMC.setItemUseCooldown(4);
 		}
+		IMC.setItemUseCooldown(4);
 		
 		lastPos = pos;
 		return true;
@@ -190,7 +196,7 @@ public final class BuildRandomHack extends Hack
 	private boolean placeBlockLegit(BlockPos pos)
 	{
 		Vec3d eyesPos = RotationUtils.getEyesPos();
-		Vec3d posVec = new Vec3d(pos).add(0.5, 0.5, 0.5);
+		Vec3d posVec = Vec3d.ofCenter(pos);
 		double distanceSqPosVec = eyesPos.squaredDistanceTo(posVec);
 		
 		for(Direction side : Direction.values())
@@ -201,7 +207,7 @@ public final class BuildRandomHack extends Hack
 			if(!BlockUtils.canBeClicked(neighbor))
 				continue;
 			
-			Vec3d dirVec = new Vec3d(side.getVector());
+			Vec3d dirVec = Vec3d.of(side.getVector());
 			Vec3d hitVec = posVec.add(dirVec.multiply(0.5));
 			
 			// check if hitVec is within range (4.25 blocks)
@@ -214,17 +220,17 @@ public final class BuildRandomHack extends Hack
 			
 			// check line of sight
 			if(MC.world
-				.rayTrace(new RayTraceContext(eyesPos, hitVec,
-					RayTraceContext.ShapeType.COLLIDER,
-					RayTraceContext.FluidHandling.NONE, MC.player))
+				.raycast(new RaycastContext(eyesPos, hitVec,
+					RaycastContext.ShapeType.COLLIDER,
+					RaycastContext.FluidHandling.NONE, MC.player))
 				.getType() != HitResult.Type.MISS)
 				continue;
 			
 			// face block
 			Rotation rotation = RotationUtils.getNeededRotations(hitVec);
-			PlayerMoveC2SPacket.LookOnly packet =
-				new PlayerMoveC2SPacket.LookOnly(rotation.getYaw(),
-					rotation.getPitch(), MC.player.onGround);
+			PlayerMoveC2SPacket.LookAndOnGround packet =
+				new PlayerMoveC2SPacket.LookAndOnGround(rotation.getYaw(),
+					rotation.getPitch(), MC.player.isOnGround());
 			MC.player.networkHandler.sendPacket(packet);
 			
 			// place block
@@ -242,7 +248,7 @@ public final class BuildRandomHack extends Hack
 	private boolean placeBlockSimple_old(BlockPos pos)
 	{
 		Vec3d eyesPos = RotationUtils.getEyesPos();
-		Vec3d posVec = new Vec3d(pos).add(0.5, 0.5, 0.5);
+		Vec3d posVec = Vec3d.ofCenter(pos);
 		
 		for(Direction side : Direction.values())
 		{
@@ -252,8 +258,7 @@ public final class BuildRandomHack extends Hack
 			if(!BlockUtils.canBeClicked(neighbor))
 				continue;
 			
-			Vec3d hitVec =
-				posVec.add(new Vec3d(side.getVector()).multiply(0.5));
+			Vec3d hitVec = posVec.add(Vec3d.of(side.getVector()).multiply(0.5));
 			
 			// check if hitVec is within range (6 blocks)
 			if(eyesPos.squaredDistanceTo(hitVec) > 36)

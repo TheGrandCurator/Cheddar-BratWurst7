@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -33,7 +34,9 @@ import javax.crypto.spec.SecretKeySpec;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
+import net.minecraft.util.Util;
 import net.minecraft.util.crash.CrashException;
 import net.minecraft.util.crash.CrashReport;
 import net.wurstclient.util.json.JsonException;
@@ -48,8 +51,10 @@ public final class Encryption
 	private final Cipher encryptCipher;
 	private final Cipher decryptCipher;
 	
-	public Encryption(Path encFolder)
+	public Encryption(Path encFolder) throws IOException
 	{
+		createEncryptionFolder(encFolder);
+		
 		KeyPair rsaKeyPair =
 			getRsaKeyPair(encFolder.resolve("wurst_rsa_public.txt"),
 				encFolder.resolve("wurst_rsa_private.txt"));
@@ -74,15 +79,35 @@ public final class Encryption
 		}
 	}
 	
-	public JsonElement parseFile(Path path) throws IOException, JsonException
+	private Path createEncryptionFolder(Path encFolder) throws IOException
 	{
-		try(BufferedReader reader = Files.newBufferedReader(path))
+		Files.createDirectories(encFolder);
+		if(Util.getOperatingSystem() == Util.OperatingSystem.WINDOWS)
+			Files.setAttribute(encFolder, "dos:hidden", true);
+		
+		Path readme = encFolder.resolve("READ ME I AM VERY IMPORTANT.txt");
+		String readmeText = "DO NOT SHARE THESE FILES WITH ANYONE!\r\n"
+			+ "They are encryption keys that protect your alt list file from being read by someone else.\r\n"
+			+ "If someone is asking you to send these files, they are 100% trying to scam you.\r\n"
+			+ "\r\n"
+			+ "DO NOT EDIT, RENAME OR DELETE THESE FILES! (unless you know what you're doing)\r\n"
+			+ "If you do, Wurst's Alt Manager can no longer read your alt list and will replace it with a blank one.\r\n"
+			+ "In other words, YOUR ALT LIST WILL BE DELETED.";
+		Files.write(readme, readmeText.getBytes("UTF-8"),
+			StandardOpenOption.CREATE);
+		
+		return encFolder;
+	}
+	
+	public byte[] decrypt(byte[] bytes)
+	{
+		try
 		{
-			return JsonUtils.JSON_PARSER.parse(loadEncryptedFile(path));
+			return decryptCipher.doFinal(Base64.getDecoder().decode(bytes));
 			
-		}catch(JsonParseException e)
+		}catch(IllegalArgumentException | GeneralSecurityException e)
 		{
-			throw new JsonException(e);
+			throw new CrashException(CrashReport.create(e, "Decrypting bytes"));
 		}
 	}
 	
@@ -95,6 +120,18 @@ public final class Encryption
 		}catch(CrashException e)
 		{
 			throw new IOException(e);
+		}
+	}
+	
+	public JsonElement parseFile(Path path) throws IOException, JsonException
+	{
+		try(BufferedReader reader = Files.newBufferedReader(path))
+		{
+			return JsonParser.parseString(loadEncryptedFile(path));
+			
+		}catch(JsonParseException e)
+		{
+			throw new JsonException(e);
 		}
 	}
 	
@@ -120,28 +157,15 @@ public final class Encryption
 		return new WsonObject(json.getAsJsonObject());
 	}
 	
-	public byte[] decrypt(byte[] bytes)
+	public byte[] encrypt(byte[] bytes)
 	{
 		try
 		{
-			return decryptCipher.doFinal(Base64.getDecoder().decode(bytes));
+			return Base64.getEncoder().encode(encryptCipher.doFinal(bytes));
 			
-		}catch(IllegalArgumentException | GeneralSecurityException e)
+		}catch(GeneralSecurityException e)
 		{
-			throw new CrashException(CrashReport.create(e, "Decrypting bytes"));
-		}
-	}
-	
-	public void toEncryptedJson(JsonObject json, Path path)
-		throws IOException, JsonException
-	{
-		try
-		{
-			saveEncryptedFile(path, JsonUtils.PRETTY_GSON.toJson(json));
-			
-		}catch(JsonParseException e)
-		{
-			throw new JsonException(e);
+			throw new CrashException(CrashReport.create(e, "Encrypting bytes"));
 		}
 	}
 	
@@ -157,15 +181,16 @@ public final class Encryption
 		}
 	}
 	
-	public byte[] encrypt(byte[] bytes)
+	public void toEncryptedJson(JsonObject json, Path path)
+		throws IOException, JsonException
 	{
 		try
 		{
-			return Base64.getEncoder().encode(encryptCipher.doFinal(bytes));
+			saveEncryptedFile(path, JsonUtils.PRETTY_GSON.toJson(json));
 			
-		}catch(GeneralSecurityException e)
+		}catch(JsonParseException e)
 		{
-			throw new CrashException(CrashReport.create(e, "Encrypting bytes"));
+			throw new JsonException(e);
 		}
 	}
 	

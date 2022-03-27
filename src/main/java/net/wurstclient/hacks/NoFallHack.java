@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -8,7 +8,7 @@
 package net.wurstclient.hacks;
 
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket.OnGroundOnly;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.events.UpdateListener;
@@ -19,7 +19,7 @@ public final class NoFallHack extends Hack implements UpdateListener
 {
 	public NoFallHack()
 	{
-		super("NoFall", "Protects you from fall damage.");
+		super("NoFall");
 		setCategory(Category.MOVEMENT);
 	}
 	
@@ -39,9 +39,18 @@ public final class NoFallHack extends Hack implements UpdateListener
 	public void onUpdate()
 	{
 		ClientPlayerEntity player = MC.player;
-		if(player.fallDistance <= 2)
+		if(player.fallDistance <= (player.isFallFlying() ? 1 : 2))
 			return;
 		
-		player.networkHandler.sendPacket(new PlayerMoveC2SPacket(true));
+		if(player.isFallFlying() && player.isSneaking()
+			&& !isFallingFastEnoughToCauseDamage(player))
+			return;
+		
+		player.networkHandler.sendPacket(new OnGroundOnly(true));
+	}
+	
+	private boolean isFallingFastEnoughToCauseDamage(ClientPlayerEntity player)
+	{
+		return player.getVelocity().y < -0.5;
 	}
 }

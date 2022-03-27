@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -12,20 +12,26 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import com.mojang.blaze3d.systems.RenderSystem;
+
+import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.decoration.ArmorStandEntity;
 import net.minecraft.entity.mob.AmbientEntity;
 import net.minecraft.entity.mob.EndermanEntity;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.WaterCreatureEntity;
-import net.minecraft.entity.mob.ZombiePigmanEntity;
+import net.minecraft.entity.mob.ZombifiedPiglinEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.HorseBaseEntity;
+import net.minecraft.entity.passive.MerchantEntity;
 import net.minecraft.entity.passive.PassiveEntity;
 import net.minecraft.entity.passive.TameableEntity;
-import net.minecraft.entity.passive.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.vehicle.AbstractMinecartEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -93,8 +99,9 @@ public final class FollowHack extends Hack
 		new CheckboxSetting("Filter pets",
 			"Won't follow tamed wolves,\n" + "tamed horses, etc.", true);
 	
-	private final CheckboxSetting filterVillagers = new CheckboxSetting(
-		"Filter villagers", "Won't follow villagers.", true);
+	private final CheckboxSetting filterTraders =
+		new CheckboxSetting("Filter traders",
+			"Won't follow villagers, wandering traders, etc.", true);
 	
 	private final CheckboxSetting filterGolems =
 		new CheckboxSetting("Filter golems",
@@ -102,12 +109,15 @@ public final class FollowHack extends Hack
 	
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't follow invisible entities.", false);
+	private final CheckboxSetting filterStands = new CheckboxSetting(
+		"Filter armor stands", "Won't follow armor stands.", true);
+	
+	private final CheckboxSetting filterCarts = new CheckboxSetting(
+		"Filter minecarts", "Won't follow minecarts.", true);
 	
 	public FollowHack()
 	{
-		super("Follow",
-			"A bot that follows the closest entity.\n" + "Very annoying.\n\n"
-				+ "Use .follow to follow a specific entity.");
+		super("Follow");
 		
 		setCategory(Category.MOVEMENT);
 		addSetting(distance);
@@ -122,31 +132,38 @@ public final class FollowHack extends Hack
 		addSetting(filterAnimals);
 		addSetting(filterBabies);
 		addSetting(filterPets);
-		addSetting(filterVillagers);
+		addSetting(filterTraders);
 		addSetting(filterGolems);
 		addSetting(filterInvisible);
+		addSetting(filterStands);
+		addSetting(filterCarts);
 	}
 	
 	@Override
 	public String getRenderName()
 	{
 		if(entity != null)
-			return "Following " + entity.getName().asString();
-		else
-			return "Follow";
+			return "Following " + entity.getName().getString();
+		return "Follow";
 	}
 	
 	@Override
 	public void onEnable()
 	{
+		WURST.getHax().fightBotHack.setEnabled(false);
+		WURST.getHax().protectHack.setEnabled(false);
+		WURST.getHax().tunnellerHack.setEnabled(false);
+		
 		if(entity == null)
 		{
-			Stream<Entity> stream = StreamSupport
-				.stream(MC.world.getEntities().spliterator(), true)
-				.filter(e -> e instanceof LivingEntity)
-				.filter(e -> !e.removed && ((LivingEntity)e).getHealth() > 0)
-				.filter(e -> e != MC.player)
-				.filter(e -> !(e instanceof FakePlayerEntity));
+			Stream<Entity> stream =
+				StreamSupport.stream(MC.world.getEntities().spliterator(), true)
+					.filter(e -> !e.isRemoved())
+					.filter(e -> e instanceof LivingEntity
+						&& ((LivingEntity)e).getHealth() > 0
+						|| e instanceof AbstractMinecartEntity)
+					.filter(e -> e != MC.player)
+					.filter(e -> !(e instanceof FakePlayerEntity));
 			
 			if(filterPlayers.isChecked())
 				stream = stream.filter(e -> !(e instanceof PlayerEntity));
@@ -163,14 +180,15 @@ public final class FollowHack extends Hack
 					
 					Box box = e.getBoundingBox();
 					box = box.union(box.offset(0, -filterFlying.getValue(), 0));
-					return MC.world.doesNotCollide(box);
+					return !MC.world.isSpaceEmpty(box);
 				});
 			
 			if(filterMonsters.isChecked())
 				stream = stream.filter(e -> !(e instanceof Monster));
 			
 			if(filterPigmen.isChecked())
-				stream = stream.filter(e -> !(e instanceof ZombiePigmanEntity));
+				stream =
+					stream.filter(e -> !(e instanceof ZombifiedPiglinEntity));
 			
 			if(filterEndermen.isChecked())
 				stream = stream.filter(e -> !(e instanceof EndermanEntity));
@@ -191,14 +209,21 @@ public final class FollowHack extends Hack
 					.filter(e -> !(e instanceof HorseBaseEntity
 						&& ((HorseBaseEntity)e).isTame()));
 			
-			if(filterVillagers.isChecked())
-				stream = stream.filter(e -> !(e instanceof VillagerEntity));
+			if(filterTraders.isChecked())
+				stream = stream.filter(e -> !(e instanceof MerchantEntity));
 			
 			if(filterGolems.isChecked())
 				stream = stream.filter(e -> !(e instanceof GolemEntity));
 			
 			if(filterInvisible.isChecked())
 				stream = stream.filter(e -> !e.isInvisible());
+			
+			if(filterStands.isChecked())
+				stream = stream.filter(e -> !(e instanceof ArmorStandEntity));
+			
+			if(filterCarts.isChecked())
+				stream =
+					stream.filter(e -> !(e instanceof AbstractMinecartEntity));
 			
 			entity = stream
 				.min(Comparator
@@ -216,7 +241,7 @@ public final class FollowHack extends Hack
 		pathFinder = new EntityPathFinder();
 		EVENTS.add(UpdateListener.class, this);
 		EVENTS.add(RenderListener.class, this);
-		ChatUtils.message("Now following " + entity.getName().asString());
+		ChatUtils.message("Now following " + entity.getName().getString());
 	}
 	
 	@Override
@@ -232,7 +257,7 @@ public final class FollowHack extends Hack
 		
 		if(entity != null)
 			ChatUtils
-				.message("No longer following " + entity.getName().asString());
+				.message("No longer following " + entity.getName().getString());
 		
 		entity = null;
 	}
@@ -250,16 +275,18 @@ public final class FollowHack extends Hack
 		}
 		
 		// check if entity died or disappeared
-		if(entity.removed || ((LivingEntity)entity).getHealth() <= 0)
+		if(entity.isRemoved() || entity instanceof LivingEntity
+			&& ((LivingEntity)entity).getHealth() <= 0)
 		{
 			entity = StreamSupport
 				.stream(MC.world.getEntities().spliterator(), true)
 				.filter(e -> e instanceof LivingEntity)
-				.filter(e -> !e.removed && ((LivingEntity)e).getHealth() > 0)
+				.filter(
+					e -> !e.isRemoved() && ((LivingEntity)e).getHealth() > 0)
 				.filter(e -> e != MC.player)
 				.filter(e -> !(e instanceof FakePlayerEntity))
-				.filter(e -> entity.getName().asString()
-					.equalsIgnoreCase(e.getName().asString()))
+				.filter(e -> entity.getName().getString()
+					.equalsIgnoreCase(e.getName().getString()))
 				.min(Comparator
 					.comparingDouble(e -> MC.player.squaredDistanceTo(e)))
 				.orElse(null);
@@ -308,7 +335,7 @@ public final class FollowHack extends Hack
 		}else
 		{
 			// jump if necessary
-			if(MC.player.horizontalCollision && MC.player.onGround)
+			if(MC.player.horizontalCollision && MC.player.isOnGround())
 				MC.player.jump();
 			
 			// swim up if necessary
@@ -316,38 +343,40 @@ public final class FollowHack extends Hack
 				MC.player.setVelocity(MC.player.getVelocity().add(0, 0.04, 0));
 			
 			// control height if flying
-			if(!MC.player.onGround
-				&& (MC.player.abilities.flying
+			if(!MC.player.isOnGround()
+				&& (MC.player.getAbilities().flying
 					|| WURST.getHax().flightHack.isEnabled())
 				&& MC.player.squaredDistanceTo(entity.getX(), MC.player.getY(),
 					entity.getZ()) <= MC.player.squaredDistanceTo(
 						MC.player.getX(), entity.getY(), MC.player.getZ()))
 			{
 				if(MC.player.getY() > entity.getY() + 1D)
-					MC.options.keySneak.setPressed(true);
+					MC.options.sneakKey.setPressed(true);
 				else if(MC.player.getY() < entity.getY() - 1D)
-					MC.options.keyJump.setPressed(true);
+					MC.options.jumpKey.setPressed(true);
 			}else
 			{
-				MC.options.keySneak.setPressed(false);
-				MC.options.keyJump.setPressed(false);
+				MC.options.sneakKey.setPressed(false);
+				MC.options.jumpKey.setPressed(false);
 			}
 			
 			// follow entity
 			WURST.getRotationFaker()
 				.faceVectorClient(entity.getBoundingBox().getCenter());
 			double distanceSq = Math.pow(distance.getValue(), 2);
-			MC.options.keyForward
+			MC.options.forwardKey
 				.setPressed(MC.player.squaredDistanceTo(entity.getX(),
 					MC.player.getY(), entity.getZ()) > distanceSq);
 		}
 	}
 	
 	@Override
-	public void onRender(float partialTicks)
+	public void onRender(MatrixStack matrixStack, float partialTicks)
 	{
 		PathCmd pathCmd = WURST.getCmds().pathCmd;
-		pathFinder.renderPath(pathCmd.isDebugMode(), pathCmd.isDepthTest());
+		RenderSystem.setShader(GameRenderer::getPositionShader);
+		pathFinder.renderPath(matrixStack, pathCmd.isDebugMode(),
+			pathCmd.isDepthTest());
 	}
 	
 	public void setEntity(Entity entity)
@@ -359,14 +388,14 @@ public final class FollowHack extends Hack
 	{
 		public EntityPathFinder()
 		{
-			super(new BlockPos(entity));
+			super(new BlockPos(entity.getPos()));
 			setThinkTime(1);
 		}
 		
 		@Override
 		protected boolean checkDone()
 		{
-			Vec3d center = new Vec3d(current).add(0.5, 0.5, 0.5);
+			Vec3d center = Vec3d.ofCenter(current);
 			double distanceSq = Math.pow(distance.getValue(), 2);
 			return done = entity.squaredDistanceTo(center) <= distanceSq;
 		}

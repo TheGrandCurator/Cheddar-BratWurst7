@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -15,7 +15,7 @@ public final class LiquidsHack extends Hack implements HitResultRayTraceListener
 {
 	public LiquidsHack()
 	{
-		super("Liquids", "Allows you to place blocks in liquids.");
+		super("Liquids");
 		setCategory(Category.BLOCKS);
 	}
 	
@@ -35,6 +35,6 @@ public final class LiquidsHack extends Hack implements HitResultRayTraceListener
 	public void onHitResultRayTrace(float float_1)
 	{
 		MC.crosshairTarget = MC.getCameraEntity()
-			.rayTrace(MC.interactionManager.getReachDistance(), float_1, true);
+			.raycast(MC.interactionManager.getReachDistance(), float_1, true);
 	}
 }

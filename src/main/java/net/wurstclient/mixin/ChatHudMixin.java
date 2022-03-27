@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014 - 2020 | Alexander01998 | All rights reserved.
+ * Copyright (c) 2014-2022 Wurst-Imperium and contributors.
  *
  * This source code is subject to the terms of the GNU General Public
  * License, version 3. If a copy of the GPL was not distributed with this
@@ -9,7 +9,7 @@ package net.wurstclient.mixin;
 
 import java.util.List;
 
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,15 +20,16 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.ChatHud;
 import net.minecraft.client.gui.hud.ChatHudLine;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
-import net.wurstclient.WurstClient;
+import net.wurstclient.event.EventManager;
 import net.wurstclient.events.ChatInputListener.ChatInputEvent;
 
 @Mixin(ChatHud.class)
 public class ChatHudMixin extends DrawableHelper
 {
 	@Shadow
-	private List<ChatHudLine> visibleMessages;
+	private List<ChatHudLine<OrderedText>> visibleMessages;
 	@Shadow
 	private static Logger LOGGER;
 	@Shadow
@@ -41,7 +42,7 @@ public class ChatHudMixin extends DrawableHelper
 	{
 		ChatInputEvent event = new ChatInputEvent(chatText, visibleMessages);
 		
-		WurstClient.INSTANCE.getEventManager().fire(event);
+		EventManager.fire(event);
 		if(event.isCancelled())
 		{
 			ci.cancel();
@@ -52,14 +53,14 @@ public class ChatHudMixin extends DrawableHelper
 		shadow$addMessage(chatText, chatLineId, client.inGameHud.getTicks(),
 			false);
 		
-		LOGGER.info("[CHAT] {}", chatText.getString().replaceAll("\r", "\\\\r")
-			.replaceAll("\n", "\\\\n"));
+		LOGGER.info("[CHAT] {}",
+			chatText.getString().replace("\r", "\\r").replace("\n", "\\n"));
 		ci.cancel();
 	}
 	
 	@Shadow
-	private void shadow$addMessage(Text text_1, int int_1, int int_2,
-		boolean boolean_1)
+	private void shadow$addMessage(Text text, int messageId, int timestamp,
+		boolean bl)
 	{
 		
 	}
