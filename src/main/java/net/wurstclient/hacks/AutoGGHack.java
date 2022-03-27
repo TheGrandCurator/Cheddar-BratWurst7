@@ -51,9 +51,7 @@ public final class AutoGGHack extends Hack implements ChatInputListener, UpdateL
 	
 	public AutoGGHack()
 	{
-		super("AutoGG", "Sends gg after a game.\n"
-			+ "Made for Hypixel minigames.\n"
-			+ "Might not work on other servers.");
+		super("AutoGG");
 		setCategory(Category.CHAT);
 	}
 	
