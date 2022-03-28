@@ -1,8 +1,11 @@
 package net.wurstclient.hud;
 
 import java.util.Map;
+import java.util.Objects;
 
 import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Position;
 import net.minecraft.world.dimension.DimensionType;
 import net.wurstclient.WurstClient;
@@ -36,39 +39,39 @@ public class InfoHUD {
 			}
 		};
 	}
-	public void renderer(float partialTicks) {
+	public void render(MatrixStack matrixStack){
 		int screenHeight = WurstClient.MC.getWindow().getScaledHeight();
 		int xPos = 2;
 		int yOffset = 10;
 		int yPos = screenHeight-yOffset;
 
 		Position pos = WurstClient.MC.player.getPos();
-		
+		String dimension = String.valueOf(WurstClient.MC.world.getRegistryKey().getValue());
 		if(((CheckboxSetting)settings.get("dimension coordinates")).isChecked()){
 			int color;
 			String dimension_pos;
-			if(WurstClient.MC.player.dimension == DimensionType.THE_NETHER) {
+			if(Objects.equals(dimension, "minecraft:the_nether")) {
 				color = 0xffffffff;
 				dimension_pos = "X: " + (int)Math.floor(pos.getX()*8) + " Y: " + (int)Math.floor(pos.getY()) + " Z: " + (int)Math.floor(pos.getZ()*8); 
 			}
 			else {
 				color = 0xffff0000;
-				dimension_pos = "X: " + (int)Math.floor(pos.getX()/8) + " Y: " + (int)Math.floor(pos.getY()) + " Z: " + (int)Math.floor(pos.getZ()/8); 
+				dimension_pos =  "X: " + (int)Math.floor(pos.getX()/8) + " Y: " + (int)Math.floor(pos.getY()) + " Z: " + (int)Math.floor(pos.getZ()/8);
 			}
-			drawText(dimension_pos, xPos, yPos, color);
+			drawText(matrixStack, dimension_pos, xPos, yPos, color);
 			yPos-=yOffset;
 		}
 
 		if(((CheckboxSetting)settings.get("coordinates")).isChecked()){
 			String defpos = "X: " + (int)Math.floor(pos.getX()) + " Y: " + (int)Math.floor(pos.getY()) + " Z: " + (int)Math.floor(pos.getZ()); 
 			int color;
-			if(WurstClient.MC.player.dimension == DimensionType.THE_NETHER) {
+			if(Objects.equals(dimension, "minecraft:the_nether")) {
 				color = 0xffff0000;
 			}
 			else {
 				color = 0xffffffff;
 			}
-			drawText(defpos, xPos, yPos, color);
+			drawText(matrixStack, defpos, xPos, yPos, color);
 			yPos -= yOffset;
 		}
 		//TODO: Calculate the speed more accurately
@@ -81,18 +84,17 @@ public class InfoHUD {
 				prevPos = pos;
 				prevTime = currTime;
 			}
-			drawText(Math.round(speed*10.0)/10.0 + " m/s", xPos, yPos, 0xffffffff);
+			drawText(matrixStack,Math.round(speed*10.0)/10.0 + " m/s", xPos, yPos, 0xffffffff);
 			yPos-=yOffset;
 		}
 		if(((CheckboxSetting)settings.get("fps")).isChecked()) {
-			drawText(WurstClient.MC.fpsDebugString.split(" fps")[0]+" FPS", xPos, yPos, 0xffffffff);
+			drawText(matrixStack, WurstClient.MC.fpsDebugString.split(" fps")[0]+" FPS", xPos, yPos, 0xffffffff);
 			yPos -= yOffset;
 		}
 	}
 
-	public void drawText(String s, int x, int y, int color) {
+	public void drawText(MatrixStack matrixStack, String s, int x, int y, int color) {
 		TextRenderer tr = WurstClient.MC.textRenderer;
-
-		tr.draw(s, x, y, color);
+		tr.draw(matrixStack, s, x, y, color);
 	}
 }
