@@ -5,9 +5,7 @@ import java.util.Objects;
 
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Position;
-import net.minecraft.world.dimension.DimensionType;
 import net.wurstclient.WurstClient;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.Setting;
