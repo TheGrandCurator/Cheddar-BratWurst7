@@ -47,7 +47,7 @@ public final class CmdList
 	public final LeaveCmd leaveCmd = new LeaveCmd();
 	public final ModifyCmd modifyCmd = new ModifyCmd();
 	public final PathCmd pathCmd = new PathCmd();
-	public final PickCmd pickCmd = new PickCmd();
+	public final EquipCmd equipCmd = new EquipCmd();
 	public final PotionCmd potionCmd = new PotionCmd();
 	public final ProtectCmd protectCmd = new ProtectCmd();
 	public final RenameCmd renameCmd = new RenameCmd();

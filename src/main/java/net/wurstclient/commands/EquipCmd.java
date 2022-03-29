@@ -5,25 +5,24 @@ import net.minecraft.util.registry.Registry;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdSyntaxError;
 import net.wurstclient.command.Command;
-import net.wurstclient.util.ChatUtils;
 import net.wurstclient.util.MathUtils;
 
 import java.util.*;
 
 import static net.wurstclient.util.InventoryUtils.isHotbarSlot;
 
-public class PickCmd extends Command
+public class EquipCmd extends Command
 {
-    public PickCmd()
+    public EquipCmd()
     {
-        super("pick",
-                "Picks the given item from your inventory\n" +
+        super("equip",
+                "Equips the given item from your inventory\n" +
                         "to the hotbar slot of your choice.\n" +
                         "Requires 1 empty slot in your inventory and\n" +
                         "a filled hotbar.\n" +
                         "Use EmptySlotKeeper-Hack to automatically keep\n" +
                         "1 slot empty.",
-                ".pick <item> <hotbar-slot>");
+                ".equip <item-minecraft-id> <hotbar-slot>");
     }
 
     @Override
