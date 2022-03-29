@@ -28,7 +28,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
@@ -44,6 +44,14 @@ import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.util.FakePlayerEntity;
 import net.wurstclient.util.RenderUtils;
 import net.wurstclient.util.RotationUtils;
+
+
+class LineColors{
+	Color color_start;
+	Color color_end;
+}
+
+
 
 @SearchTags({"player esp", "PlayerTracers", "player tracers"})
 public final class PlayerEspHack extends Hack implements UpdateListener,
@@ -65,8 +73,11 @@ public final class PlayerEspHack extends Hack implements UpdateListener,
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't show invisible players.", false);
 
-	private final CheckboxSetting armorColor = new CheckboxSetting(
-			"Tracer is Armor Color", "Line color will attemt to be set to what a player's armor color is.", false);
+	private final CheckboxSetting armorColorTrace = new CheckboxSetting(
+			"Tracer is Armor Color", "Line color will attempt to be set to what a player's armor color is.", false);
+
+	private final CheckboxSetting armorColorBox = new CheckboxSetting(
+			"Box is Armor Color", "Box color will attempt to be set to what a player's armor color is.", false);
 
 	private final ArrayList<PlayerEntity> players = new ArrayList<>();
 
@@ -79,7 +90,8 @@ public final class PlayerEspHack extends Hack implements UpdateListener,
 		addSetting(boxSize);
 		addSetting(filterSleeping);
 		addSetting(filterInvisible);
-		addSetting(armorColor);
+		addSetting(armorColorTrace);
+		addSetting(armorColorBox);
 	}
 
 	@Override
@@ -128,7 +140,38 @@ public final class PlayerEspHack extends Hack implements UpdateListener,
 			event.cancel();
 	}
 
-	@Override
+	private Color getColorByDistance(PlayerEntity e) {
+		float r, g, b;
+		float f = MC.player.distanceTo(e) / 20F;
+		r = MathHelper.clamp(2 - f, 0, 1);
+		g = MathHelper.clamp(f, 0, 1);
+		b = 0;
+		return new Color(r, g, b, 0.5F);
+	}
+
+
+	private Color getColorByArmor(PlayerEntity e) {
+		float r = 0, g = 0, b = 0;
+		for (ItemStack items : e.getInventory().armor) {
+			NbtCompound compoundTag = items.getSubNbt("display");
+			// Returns a decimal color code
+			int color = compoundTag != null && compoundTag.contains("color", 99) ? compoundTag.getInt("color") : -1;
+			// no color found
+			if (color == -1)
+				continue;
+
+			// Convert decimal color to RGB value (Integer: 0-255) then convert to percentage as float (0F - 1F)
+			Color c = new Color(color);
+			r = (float) c.getRed() / 255;
+			g = (float) c.getGreen() / 255;
+			b = (float) c.getBlue() / 255;
+			break;
+		}
+		return new Color(r, g, b,0.5F);
+	}
+
+
+		@Override
 	public void onRender(MatrixStack matrixStack, float partialTicks)
 	{
 		// GL settings
@@ -178,14 +221,16 @@ public final class PlayerEspHack extends Hack implements UpdateListener,
 				e.getHeight() + extraSize, e.getWidth() + extraSize);
 
 			// set color
-			if(WURST.getFriends().contains(e.getEntityName()))
-				RenderSystem.setShaderColor(0, 0, 1, 0.5F);
-			else
-			{
-				float f = MC.player.distanceTo(e) / 20F;
-				RenderSystem.setShaderColor(2 - f, f, 0, 0.5F);
+			Color color;
+			if (armorColorBox.isChecked()) {
+				color = getColorByArmor(e);
+			} else if (WURST.getFriends().contains(e.getEntityName())) {
+				color = new Color(0, 0, 1);
+			} else {
+				color = getColorByDistance(e);
 			}
 
+			RenderSystem.setShaderColor(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha());
 			Box bb = new Box(-0.5, 0, -0.5, 0.5, 1, 0.5);
 			RenderUtils.drawOutlinedBox(bb, matrixStack);
 
@@ -214,51 +259,27 @@ public final class PlayerEspHack extends Hack implements UpdateListener,
 
 			Vec3d end = e.getBoundingBox().getCenter()
 					.subtract(interpolationOffset).subtract(regionX, 0, regionZ);
-
-			float r = 0, g=0, b=0;
-			// set color
-			if(armorColor.isChecked()) {
-				for (ItemStack items : e.getInventory().armor) {
-					CompoundTag compoundTag = items.getSubNbt("display");
-					// Returns a decimal color code
-					int color = compoundTag != null && compoundTag.contains("color", 99) ? compoundTag.getInt("color") : -1;
-					// no color found
-					if (color == -1)
-						continue;
-
-					// Convert decimal color to RGB value (Integer: 0-255) then convert to percentage as float (0F - 1F)
-					Color c = new Color(color);
-					r = (float) c.getRed() / 255;
-					g = (float) c.getGreen() / 255;
-					b = (float) c.getBlue() / 255;
-					break;
-				}
-			}
-			else if(WURST.getFriends().contains(e.getEntityName())){
-
-				r = 0;
-				g = 0;
-				b = 1;
-			}
-			else{
-				float f = MC.player.distanceTo(e) / 20F;
-				r = MathHelper.clamp(2 - f, 0, 1);
-				g = MathHelper.clamp(f, 0, 1);
-				b = 0;
+			Color color;
+			if (armorColorTrace.isChecked()) {
+				color = getColorByArmor(e);
+			} else if (WURST.getFriends().contains(e.getEntityName())) {
+				color = new Color(0, 0, 1, 0.5F);
+			} else {
+				color = getColorByDistance(e);
 			}
 
 			bufferBuilder
 					.vertex(matrix, (float)start.x, (float)start.y, (float)start.z)
-					.color(r, g, b, 0.5F).next();
+					.color(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha()).next();
 
 			bufferBuilder
 					.vertex(matrix, (float)end.x, (float)end.y, (float)end.z)
-					.color(r, g, b, 0.5F).next();
-
-		bufferBuilder.end();
-		BufferRenderer.draw(bufferBuilder);
+					.color(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha()).next();
 		}
+	bufferBuilder.end();
+	BufferRenderer.draw(bufferBuilder);
 	}
+
 	private enum Style
 	{
 		BOXES("Boxes only", true, false),
