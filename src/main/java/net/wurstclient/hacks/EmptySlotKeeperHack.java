@@ -12,8 +12,7 @@ public class EmptySlotKeeperHack extends Hack implements UpdateListener
 {
     public EmptySlotKeeperHack()
     {
-        super("EmptySlotKeeper", "Keeps one slot of your inventory always empty.\n" +
-                "Useful in combination with the pick-command.");
+        super("EmptySlotKeeper");
     }
 
     @Override
@@ -44,7 +43,7 @@ public class EmptySlotKeeperHack extends Hack implements UpdateListener
     }
 
     private boolean isInventoryFull(){
-        int slot = MC.player.inventory.getEmptySlot();
+        int slot = MC.player.getInventory().getEmptySlot();
 
         //no empty slot was found
         if(slot == -1)
@@ -77,8 +76,6 @@ public class EmptySlotKeeperHack extends Hack implements UpdateListener
                 ChatUtils.warning("Please remove one item from your inventory before the EmptySlotKeeper can start.");
                 showRemoveItemMessage = false;
             }
-
-            return;
         }
         else
         {

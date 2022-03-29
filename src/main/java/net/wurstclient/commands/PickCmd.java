@@ -5,6 +5,7 @@ import net.minecraft.util.registry.Registry;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdSyntaxError;
 import net.wurstclient.command.Command;
+import net.wurstclient.util.ChatUtils;
 import net.wurstclient.util.MathUtils;
 
 import java.util.*;
@@ -31,7 +32,7 @@ public class PickCmd extends Command
         if(args.length != 2)
             throw new CmdSyntaxError("Expected 2 arguments");
 
-        Integer slot;
+        int slot;
         String item = args[0];
 
         if(!MathUtils.isInteger(args[1]))
@@ -48,11 +49,7 @@ public class PickCmd extends Command
 
     private void equipItem(String item, Integer slot)
     {
-        if(equipFromHotbar(item, slot))
-        {
-            return;
-        }
-        else
+        if(!equipFromHotbar(item, slot))
         {
             equipFromInventory(item, slot);
         }
@@ -79,7 +76,7 @@ public class PickCmd extends Command
 
         //Currently the specified slot in which the item should be placed is ignored for hotbar items.
         //To fix this, you need to swap/click items in the hotbar. Unfortunately i wasn't able to code it.
-        MC.player.inventory.selectedSlot = itemInHotbar;
+        MC.player.getInventory().selectedSlot = itemInHotbar;
 
         return true;
     }
@@ -89,7 +86,7 @@ public class PickCmd extends Command
         if(from == -1)
             return;
 
-        MC.player.inventory.selectedSlot = to;
+        MC.player.getInventory().selectedSlot = to;
 
         //1. move the item from the hotbar which is blocking the specified slot to your inventory (requires 1 empty space)
         IMC.getInteractionManager()
@@ -105,7 +102,7 @@ public class PickCmd extends Command
     {
         for(int i = startSlot; i < endSlot; i++)
         {
-            Item currentItem = MC.player.inventory.getInvStack(i).getItem();
+            Item currentItem = MC.player.getInventory().getStack(i).getItem();
             String currentItemName = Registry.ITEM.getId(currentItem).toString();
             if(Objects.equals(itemName, currentItemName)) {
                 return i;
