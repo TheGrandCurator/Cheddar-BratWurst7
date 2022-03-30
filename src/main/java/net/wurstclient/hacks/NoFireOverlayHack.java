@@ -19,6 +19,7 @@ public final class NoFireOverlayHack extends Hack
 	{
 		super("NoFireOverlay");
 		setCategory(Category.RENDER);
+		addSetting(mode);
 	}
 	private final EnumSetting<Mode> mode = new EnumSetting<>("Mode",
 			"\u00a7lLower\u00a7r mode lowers the overlay.\n"
