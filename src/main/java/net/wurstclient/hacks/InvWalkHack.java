@@ -54,7 +54,7 @@ public final class InvWalkHack extends Hack implements UpdateListener
 	
 	public InvWalkHack()
 	{
-		super("InvWalk", "Enables movement in inventory and container screens");
+		super("InvWalk");
 		setCategory(Category.MOVEMENT);
 		addSetting(exception);
 	}
@@ -77,25 +77,25 @@ public final class InvWalkHack extends Hack implements UpdateListener
 		if (avoid() || optional() && exception.isChecked())
 			return;
 		
-		IKeyBinding forwardKey = (IKeyBinding)MC.options.keyForward;
+		IKeyBinding forwardKey = (IKeyBinding)MC.options.forwardKey;
 		((KeyBinding)forwardKey).setPressed(forwardKey.isActallyPressed());
 		
-		IKeyBinding backKey = (IKeyBinding)MC.options.keyBack;
+		IKeyBinding backKey = (IKeyBinding)MC.options.backKey;
 		((KeyBinding)backKey).setPressed(backKey.isActallyPressed());
 		
-		IKeyBinding leftKey = (IKeyBinding)MC.options.keyLeft;
+		IKeyBinding leftKey = (IKeyBinding)MC.options.leftKey;
 		((KeyBinding)leftKey).setPressed(leftKey.isActallyPressed());
 		
-		IKeyBinding rightKey = (IKeyBinding)MC.options.keyRight;
+		IKeyBinding rightKey = (IKeyBinding)MC.options.rightKey;
 		((KeyBinding)rightKey).setPressed(rightKey.isActallyPressed());
 		
-		IKeyBinding jumpKey = (IKeyBinding)MC.options.keyJump;
+		IKeyBinding jumpKey = (IKeyBinding)MC.options.jumpKey;
 		((KeyBinding)jumpKey).setPressed(jumpKey.isActallyPressed());
 		
-		IKeyBinding sprintKey = (IKeyBinding)MC.options.keySprint;
+		IKeyBinding sprintKey = (IKeyBinding)MC.options.sprintKey;
 		((KeyBinding)sprintKey).setPressed(sprintKey.isActallyPressed());
 		
-		IKeyBinding sneakKey = (IKeyBinding)MC.options.keySneak;
+		IKeyBinding sneakKey = (IKeyBinding)MC.options.sneakKey;
 		((KeyBinding)sneakKey).setPressed(sneakKey.isActallyPressed());	
 			
 	}
