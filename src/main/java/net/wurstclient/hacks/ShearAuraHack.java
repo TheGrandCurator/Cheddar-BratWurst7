@@ -66,7 +66,7 @@ public final class ShearAuraHack extends Hack
 
 	public ShearAuraHack()
 	{
-		super("ShearAura", "Automatically shears sheep around you.");
+		super("ShearAura");
 		setCategory(Category.OTHER);
 		addSetting(range);
 		addSetting(priority);
