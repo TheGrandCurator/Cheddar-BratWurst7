@@ -23,12 +23,12 @@ public final class SpamCmd extends Command {
 	public SpamCmd() {
 		super("spam",
 			"Spams the given chat message while adding randomized characters.\n"
-						+ "<length> represents the times <message> is to be spammed.\n"
-						+ "<delay> represents the time between <message> sending in milliseconds.\n"
+						+ "<count> represents the times <message> is to be spammed.\n"
+						+ "<ms_delay> represents the time between <message> sending in milliseconds.\n"
 						+ "<replace_percent> represents the amount of characters replaced in <message>.\n"
 						+ "<message> represents the message you want to send. <message> can have spaces in it.\n"
 						+ "off Stops spamming\n",
-				".spam <length> <delay> <replace> <message>\n"
+				".spam <count> <delay> <replace> <message>\n"
 						+ ".spam off"
 		);
 	}
@@ -145,10 +145,10 @@ public final class SpamCmd extends Command {
 			toChange1 = message.toString();
 
 			if (!isInteger(args[0]))
-				throw new CmdSyntaxError("First Argument is Length - Should be an Integer");
+				throw new CmdSyntaxError("First Argument is Count - Should be an Integer");
 
 			if (!isInteger(args[1]))
-				throw new CmdSyntaxError("Second Argument is Delay - Should be an Integer");
+				throw new CmdSyntaxError("Second Argument is Delay in Milliseconds - Should be an Integer");
 
 			String chanceInputString1 = args[2];
 
