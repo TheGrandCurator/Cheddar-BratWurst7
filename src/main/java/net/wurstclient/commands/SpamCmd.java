@@ -22,16 +22,21 @@ import net.wurstclient.command.Command;
 public final class SpamCmd extends Command {
 	public SpamCmd() {
 		super("spam",
-			"Spams the given chat message while adding randomized characters."
-						+ "<length> represents the times <message> is to be spammed."
-						+ "<delay> represents the time between <message> sending in milliseconds."
-						+ "<replace> represents the amount of characters replaced in <message>. Format as a percentage with 2 numbers."
-						+ "<message> represents the message you want to send. <message> can have spaces in it.",
-				".spam <length> <delay> <replace> <message>");
+			"Spams the given chat message while adding randomized characters.\n"
+						+ "<length> represents the times <message> is to be spammed.\n"
+						+ "<delay> represents the time between <message> sending in milliseconds.\n"
+						+ "<replace_percent> represents the amount of characters replaced in <message>.\n"
+						+ "<message> represents the message you want to send. <message> can have spaces in it.\n"
+						+ "off Stops spamming\n",
+				".spam <length> <delay> <replace> <message>\n"
+						+ ".spam off"
+		);
 	}
 
+	boolean stop_spamming;
+
 	static Map<String, String> map = new HashMap<String, String>();
-	{
+	static {
 		// Mapping for Character Replacement
 		// Upper Case Mapping
 
@@ -119,82 +124,91 @@ public final class SpamCmd extends Command {
 
 		// Warnings
 
-		if (args.length < 4)
-			throw new CmdSyntaxError("There should be 4 Arguments - Do .help spam for more info");
-		
-		String toChange1 = "";
-				
-		if (args.length > 3) {
+		if (args.length < 4) {
+			if (args.length == 1 && args[0].toString().equals("off")){
+				stop_spamming = true;
+			}
+			else {
+				throw new CmdSyntaxError("Too few Arguments - Do .help spam for more info");
+			}
+		}
+		else {
+			String toChange1 = "";
+
 			StringBuilder message = new StringBuilder();
-			
 			// Combine all arguments after i (3)
-			
+
 			for (int i = 3; i < args.length; i++) {
 				message.append(" ").append(args[i]);
 			}
-			
+
 			toChange1 = message.toString();
-		}
 
-		if (!isInteger(args[0]))
-			throw new CmdSyntaxError("First Argument is Length - Should be an Integer");
+			if (!isInteger(args[0]))
+				throw new CmdSyntaxError("First Argument is Length - Should be an Integer");
 
-		if (!isInteger(args[1]))
-			throw new CmdSyntaxError("Second Argument is Delay - Should be an Integer");
-				
-		String chanceInputString1 = args[2];
-		
-		if (chanceInputString1.contains("%")) {
-			chanceInputString1 = chanceInputString1.replace("%", "");
-		}
-		
-		if (!(chanceInputString1.length() == 2))
-			throw new CmdSyntaxError("Use two numbers to represent your Chance - 00 to 99 Supported.");
-		
-		if (!isInteger(chanceInputString1))
-			throw new CmdSyntaxError("Third Argument is Chance - Should be an Integer");
-				
-		String chanceInputString = chanceInputString1;	
-		int chanceInput = Integer.parseInt(chanceInputString);		
-		double chance = ((double) chanceInput) / 100;
-		
-		int repeatLenght = Integer.parseInt(args[0]);
-		int repeatDelay = Integer.parseInt(args[1]);
-		
-		final String toChange = toChange1;
-		
-		// Starts the program in a new tread
+			if (!isInteger(args[1]))
+				throw new CmdSyntaxError("Second Argument is Delay - Should be an Integer");
 
-		Thread thread = new Thread() {
-			public void run() {
-				System.out.println("Spam Thread Running");
-				for (int j = 0; j < repeatLenght; j++) {
-					String temp = toChange;
-					for (int i = 0; i < temp.length(); i++) {
-						if ((Math.random() < chance)) {
+			String chanceInputString1 = args[2];
+
+			if (chanceInputString1.contains("%")) {
+				chanceInputString1 = chanceInputString1.replace("%", "");
+			}
+
+			if (!isInteger(chanceInputString1))
+				throw new CmdSyntaxError("Third Argument is Replace Percent - Should be an Integer");
+
+			String chanceInputString = chanceInputString1;
+
+			int chanceInput = Integer.parseInt(chanceInputString);
+			if (chanceInput < 0 || chanceInput > 100){
+				throw new CmdSyntaxError("Third Argument is Replace Percent - Between 0 and 100%");
+			}
+			double chance = ((double) chanceInput) / 100;
+
+			int repeatLenght = Integer.parseInt(args[0]);
+			int repeatDelay = Integer.parseInt(args[1]);
+
+			final String toChange = toChange1;
+
+			// Starts the program in a new tread
+			stop_spamming = false;
+			Thread running_thread = new Thread() {
+				public void run() {
+					System.out.println("Spam Thread Running");
+					while (!stop_spamming) {
+						for (int j = 0; j < repeatLenght; j++) {
+							if (stop_spamming){
+								break;
+							}
+							String temp = toChange;
+							for (int i = 0; i < temp.length(); i++) {
+								if ((Math.random() < chance)) {
+									try {
+										temp = temp.replace(temp.charAt(i), findMapping(temp.charAt(i)));
+									} catch (Exception e) {
+										// Do Nothing because above has a 100% probability of happening
+										e.printStackTrace();
+									}
+								}
+							}
+							String message = String.join(" ", temp);
+							ChatMessageC2SPacket packet = new ChatMessageC2SPacket(message);
+							MC.getNetworkHandler().sendPacket(packet);
 							try {
-								temp = temp.replace(temp.charAt(i), findMapping(temp.charAt(i)));
-							} catch (Exception e) {
-								// Do Nothing because above has a 100% probability of happening
+								TimeUnit.MILLISECONDS.sleep(repeatDelay);
+							} catch (InterruptedException e) {
+								// Do Nothing because above has a 100% probability of happening.
 								e.printStackTrace();
 							}
 						}
-					}
-					String message = String.join(" ", temp);
-					ChatMessageC2SPacket packet = new ChatMessageC2SPacket(message);
-					MC.getNetworkHandler().sendPacket(packet);
-					try {
-						TimeUnit.MILLISECONDS.sleep(repeatDelay);
-					} catch (InterruptedException e) {
-						// Do Nothing because above has a 100% probability of happening.
-						e.printStackTrace();
+						stop_spamming = true;
 					}
 				}
-			}
-		};
-
-		thread.start();
-
+			};
+			running_thread.start();
+		}
 	}
 
 	// Function findMapping()
