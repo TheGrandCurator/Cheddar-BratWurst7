@@ -15,39 +15,34 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"FastClimb", "fast ladder", "fast climb"})
-public final class FastLadderHack extends Hack implements UpdateListener
-{
-	public FastLadderHack()
-	{
-		super("FastLadder");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		ClientPlayerEntity player = MC.player;
-		
-		if(!player.isClimbing() || !player.horizontalCollision)
-			return;
-		
-		if(player.input.movementForward == 0
-			&& player.input.movementSideways == 0)
-			return;
-		
-		Vec3d velocity = player.getVelocity();
-		player.setVelocity(new Vec3d(velocity.x, 0.2872, velocity.z));
-	}
+public final class FastLadderHack extends Hack implements UpdateListener {
+    public FastLadderHack() {
+        super("FastLadder");
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        ClientPlayerEntity player = MC.player;
+
+        if (!player.isClimbing() || !player.horizontalCollision)
+            return;
+
+        if (player.input.movementForward == 0
+                && player.input.movementSideways == 0)
+            return;
+
+        Vec3d velocity = player.getVelocity();
+        player.setVelocity(new Vec3d(velocity.x, 0.2872, velocity.z));
+    }
 }

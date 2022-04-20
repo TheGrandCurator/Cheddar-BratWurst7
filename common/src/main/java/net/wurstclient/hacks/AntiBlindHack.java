@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"AntiBlindness", "NoBlindness", "anti blindness", "no blindness"})
-public final class AntiBlindHack extends Hack
-{
-	public AntiBlindHack()
-	{
-		super("AntiBlind");
-		setCategory(Category.RENDER);
-	}
-	
-	// See BackgroundRendererMixin
+public final class AntiBlindHack extends Hack {
+    public AntiBlindHack() {
+        super("AntiBlind");
+        setCategory(Category.RENDER);
+    }
+
+    // See BackgroundRendererMixin
 }

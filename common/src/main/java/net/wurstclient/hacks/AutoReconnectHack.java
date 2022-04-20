@@ -14,13 +14,11 @@ import net.wurstclient.hack.Hack;
 
 @SearchTags({"auto reconnect", "AutoRejoin", "auto rejoin"})
 @DontBlock
-public final class AutoReconnectHack extends Hack
-{
-	public AutoReconnectHack()
-	{
-		super("AutoReconnect");
-		setCategory(Category.OTHER);
-	}
-	
-	// See DisconnectedScreenMixin
+public final class AutoReconnectHack extends Hack {
+    public AutoReconnectHack() {
+        super("AutoReconnect");
+        setCategory(Category.OTHER);
+    }
+
+    // See DisconnectedScreenMixin
 }

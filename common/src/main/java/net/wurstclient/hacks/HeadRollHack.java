@@ -15,38 +15,33 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"head roll", "nodding", "yes"})
-public final class HeadRollHack extends Hack implements UpdateListener
-{
-	public HeadRollHack()
-	{
-		super("HeadRoll");
-		setCategory(Category.FUN);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		// disable incompatible derps
-		WURST.getHackRegistry().derpHack.setEnabled(false);
-		WURST.getHackRegistry().tiredHack.setEnabled(false);
-		
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		float timer = MC.player.age % 20 / 10F;
-		float pitch = MathHelper.sin(timer * (float)Math.PI) * 90F;
-		
-		MC.player.networkHandler.sendPacket(
-			new PlayerMoveC2SPacket.LookAndOnGround(MC.player.getYaw(), pitch,
-				MC.player.isOnGround()));
-	}
+public final class HeadRollHack extends Hack implements UpdateListener {
+    public HeadRollHack() {
+        super("HeadRoll");
+        setCategory(Category.FUN);
+    }
+
+    @Override
+    public void onEnable() {
+        // disable incompatible derps
+        WURST.getHackRegistry().derpHack.setEnabled(false);
+        WURST.getHackRegistry().tiredHack.setEnabled(false);
+
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        float timer = MC.player.age % 20 / 10F;
+        float pitch = MathHelper.sin(timer * (float) Math.PI) * 90F;
+
+        MC.player.networkHandler.sendPacket(
+                new PlayerMoveC2SPacket.LookAndOnGround(MC.player.getYaw(), pitch,
+                        MC.player.isOnGround()));
+    }
 }

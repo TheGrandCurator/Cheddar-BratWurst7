@@ -17,20 +17,17 @@ import net.wurstclient.navigator.NavigatorMainScreen;
 @DontSaveState
 @DontBlock
 @SearchTags({"ClickGUI", "click gui", "SearchGUI", "search gui", "HackMenu",
-	"hack menu"})
-public final class NavigatorHack extends Hack
-{
-	public NavigatorHack()
-	{
-		super("Navigator");
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		if(!(MC.currentScreen instanceof NavigatorMainScreen))
-			WurstClient.setScreen(new NavigatorMainScreen());
-		
-		setEnabled(false);
-	}
+        "hack menu"})
+public final class NavigatorHack extends Hack {
+    public NavigatorHack() {
+        super("Navigator");
+    }
+
+    @Override
+    public void onEnable() {
+        if (!(MC.currentScreen instanceof NavigatorMainScreen))
+            WurstClient.setScreen(new NavigatorMainScreen());
+
+        setEnabled(false);
+    }
 }

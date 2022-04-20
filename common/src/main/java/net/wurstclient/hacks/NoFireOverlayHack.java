@@ -13,32 +13,29 @@ import net.wurstclient.hack.Hack;
 import net.wurstclient.settings.EnumSetting;
 
 @SearchTags({"no fire overlay"})
-public final class NoFireOverlayHack extends Hack
-{
-	public NoFireOverlayHack()
-	{
-		super("NoFireOverlay");
-		setCategory(Category.RENDER);
-		addSetting(mode);
-	}
-	private final EnumSetting<Mode> mode = new EnumSetting<>("Mode",
-			"§lLower§r mode lowers the overlay.\n"
-					+ "§lRemove§r mode removes the overlay.",
-			Mode.values(), Mode.LOWER);
-	public boolean shouldCancelOverlay()
-	{
-		return isEnabled() && mode.getSelected() == Mode.REMOVE;
-	}
+public final class NoFireOverlayHack extends Hack {
+    private final EnumSetting<Mode> mode = new EnumSetting<>("Mode",
+            "§lLower§r mode lowers the overlay.\n"
+                    + "§lRemove§r mode removes the overlay.",
+            Mode.values(), Mode.LOWER);
 
-	public boolean shouldLowerOverlay()
-	{
-		return isEnabled() && mode.getSelected() == Mode.LOWER;
-	}
+    public NoFireOverlayHack() {
+        super("NoFireOverlay");
+        setCategory(Category.RENDER);
+        addSetting(mode);
+    }
 
-	private enum Mode
-	{
-		LOWER,
-		REMOVE
-	}
-	// See InGameOverlayRendererMixin.onRenderFireOverlay()
+    public boolean shouldCancelOverlay() {
+        return isEnabled() && mode.getSelected() == Mode.REMOVE;
+    }
+
+    public boolean shouldLowerOverlay() {
+        return isEnabled() && mode.getSelected() == Mode.LOWER;
+    }
+
+    private enum Mode {
+        LOWER,
+        REMOVE
+    }
+    // See InGameOverlayRendererMixin.onRenderFireOverlay()
 }

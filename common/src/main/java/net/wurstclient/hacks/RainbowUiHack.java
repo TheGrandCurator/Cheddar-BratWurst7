@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"RainbowGUI", "rainbow ui", "rainbow gui", "rgb"})
-public final class RainbowUiHack extends Hack
-{
-	public RainbowUiHack()
-	{
-		super("RainbowUI");
-		setCategory(Category.FUN);
-	}
-	
-	// See ClickGui.updateColors()
+public final class RainbowUiHack extends Hack {
+    public RainbowUiHack() {
+        super("RainbowUI");
+        setCategory(Category.FUN);
+    }
+
+    // See ClickGui.updateColors()
 }

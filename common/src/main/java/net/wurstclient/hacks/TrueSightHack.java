@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"true sight"})
-public final class TrueSightHack extends Hack
-{
-	public TrueSightHack()
-	{
-		super("TrueSight");
-		setCategory(Category.RENDER);
-	}
-	
-	// See LivingEntityRendererMixin
+public final class TrueSightHack extends Hack {
+    public TrueSightHack() {
+        super("TrueSight");
+        setCategory(Category.RENDER);
+    }
+
+    // See LivingEntityRendererMixin
 }

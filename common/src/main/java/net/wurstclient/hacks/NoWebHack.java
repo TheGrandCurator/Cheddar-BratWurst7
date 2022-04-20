@@ -12,29 +12,24 @@ import net.wurstclient.Category;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
-public final class NoWebHack extends Hack implements UpdateListener
-{
-	public NoWebHack()
-	{
-		super("NoWeb");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		IMC.getPlayer().setMovementMultiplier(Vec3d.ZERO);
-	}
+public final class NoWebHack extends Hack implements UpdateListener {
+    public NoWebHack() {
+        super("NoWeb");
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        IMC.getPlayer().setMovementMultiplier(Vec3d.ZERO);
+    }
 }

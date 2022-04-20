@@ -25,8 +25,7 @@ import java.util.stream.Stream;
 
 @SearchTags({"herbalism", "plants", "aura", "mcmmo"})
 public class LawnmowerHack extends Hack
-        implements UpdateListener, PostMotionListener
-{
+        implements UpdateListener, PostMotionListener {
     private final SliderSetting range = new SliderSetting("Range",
             "Determines how far Lawnmower will reach\n"
                     + "Anything that is further away than the\n"
@@ -55,10 +54,8 @@ public class LawnmowerHack extends Hack
             true);
     private final CheckboxSetting breakGrass = new CheckboxSetting("Break Grass",
             true);
-
-
-    private BlockPos target;
     Stream<BlockPos> targets;
+    private BlockPos target;
 
     public LawnmowerHack() {
         super("Lawnmower");
@@ -77,29 +74,27 @@ public class LawnmowerHack extends Hack
 
 
     @Override
-    protected void onEnable()
-    {
+    protected void onEnable() {
         EVENTS.add(UpdateListener.class, this);
         EVENTS.add(PostMotionListener.class, this);
     }
 
     @Override
-    protected void onDisable()
-    {
+    protected void onDisable() {
         EVENTS.remove(UpdateListener.class, this);
         EVENTS.remove(PostMotionListener.class, this);
         target = null;
     }
 
-    private ArrayList<Block> getWantedBlocks(){
+    private ArrayList<Block> getWantedBlocks() {
         ArrayList<Block> blocks = new ArrayList<>();
-        if (breakGrass.isChecked()){
+        if (breakGrass.isChecked()) {
             blocks.add(Blocks.GRASS);
             blocks.add(Blocks.TALL_GRASS);
             blocks.add(Blocks.SEAGRASS);
             blocks.add(Blocks.TALL_SEAGRASS);
         }
-        if (breakVines.isChecked()){
+        if (breakVines.isChecked()) {
             blocks.add(Blocks.VINE);
             blocks.add(Blocks.CAVE_VINES_PLANT);
             blocks.add(Blocks.CAVE_VINES);
@@ -108,21 +103,21 @@ public class LawnmowerHack extends Hack
             blocks.add(Blocks.WEEPING_VINES);
             blocks.add(Blocks.WEEPING_VINES_PLANT);
         }
-        if (breakLilyPads.isChecked()){
+        if (breakLilyPads.isChecked()) {
             blocks.add(Blocks.LILY_PAD);
         }
-        if (breakMushrooms.isChecked()){
+        if (breakMushrooms.isChecked()) {
             blocks.add(Blocks.BROWN_MUSHROOM);
             blocks.add(Blocks.RED_MUSHROOM);
         }
-        if (breakWheat.isChecked()){
+        if (breakWheat.isChecked()) {
             blocks.add(Blocks.WHEAT);
         }
-        if (breakFerns.isChecked()){
+        if (breakFerns.isChecked()) {
             blocks.add(Blocks.FERN);
             blocks.add(Blocks.LARGE_FERN);
         }
-        if (breakFlowers.isChecked()){
+        if (breakFlowers.isChecked()) {
             blocks.add(Blocks.DANDELION);
             blocks.add(Blocks.POPPY);
             blocks.add(Blocks.BLUE_ORCHID);
@@ -143,18 +138,17 @@ public class LawnmowerHack extends Hack
         return blocks;
     }
 
-    private Stream<BlockPos> getBlocksStream(){
+    private Stream<BlockPos> getBlocksStream() {
         ArrayList<Block> wantedBlocks = getWantedBlocks();
         return BlockUtils.getAllInRangeFromEyes(range.getValueI())
                 .filter(pos -> wantedBlocks.contains(BlockUtils.getBlock(pos)));
     }
 
     @Override
-    public void onUpdate()
-    {
+    public void onUpdate() {
         target = getBlocksStream().min(priority.getSelected().comparator).orElse(null);
         targets = getBlocksStream();
-        if(target == null)
+        if (target == null)
             return;
 
         WURST.getRotationFaker()
@@ -162,13 +156,12 @@ public class LawnmowerHack extends Hack
     }
 
     @Override
-    public void onPostMotion()
-    {
-        if(target == null)
+    public void onPostMotion() {
+        if (target == null)
             return;
-        if (instantBreak.isChecked()){
+        if (instantBreak.isChecked()) {
             BlockBreaker.breakBlocksWithPacketSpam(targets.toList());
-        }else {
+        } else {
             BlockBreaker.breakOneBlock(target);
         }
         ClientPlayerEntity player = MC.player;
@@ -177,8 +170,7 @@ public class LawnmowerHack extends Hack
         target = null;
     }
 
-    private enum Priority
-    {
+    private enum Priority {
         DISTANCE("Distance", e -> MC.player.squaredDistanceTo(Vec3d.ofCenter(e))),
         ANGLE("Angle",
                 e -> RotationUtils.getAngleToLookVec(Vec3d.ofCenter(e))),
@@ -187,15 +179,13 @@ public class LawnmowerHack extends Hack
         private final String name;
         private final Comparator<BlockPos> comparator;
 
-        Priority(String name, ToDoubleFunction<BlockPos> keyExtractor)
-        {
+        Priority(String name, ToDoubleFunction<BlockPos> keyExtractor) {
             this.name = name;
             comparator = Comparator.comparingDouble(keyExtractor);
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return name;
         }
     }

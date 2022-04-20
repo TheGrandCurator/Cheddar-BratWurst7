@@ -16,37 +16,32 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"BoatFlight", "boat fly", "boat flight"})
-public final class BoatFlyHack extends Hack implements UpdateListener
-{
-	public BoatFlyHack()
-	{
-		super("BoatFly");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		// check if riding
-		if(!MC.player.hasVehicle())
-			return;
-		
-		// fly
-		Entity vehicle = MC.player.getVehicle();
-		Vec3d velocity = vehicle.getVelocity();
-		double motionY = WurstClient.MC_GAME_OPTIONS.getJumpKey().isPressed() ? 0.3 : 0;
-		vehicle.setVelocity(new Vec3d(velocity.x, motionY, velocity.z));
-	}
+public final class BoatFlyHack extends Hack implements UpdateListener {
+    public BoatFlyHack() {
+        super("BoatFly");
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        // check if riding
+        if (!MC.player.hasVehicle())
+            return;
+
+        // fly
+        Entity vehicle = MC.player.getVehicle();
+        Vec3d velocity = vehicle.getVelocity();
+        double motionY = WurstClient.MC_GAME_OPTIONS.getJumpKey().isPressed() ? 0.3 : 0;
+        vehicle.setVelocity(new Vec3d(velocity.x, motionY, velocity.z));
+    }
 }

@@ -7,11 +7,6 @@
  */
 package net.wurstclient.hacks;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.OreBlock;
@@ -28,181 +23,168 @@ import net.wurstclient.util.BlockUtils;
 import net.wurstclient.util.ChatUtils;
 import net.wurstclient.util.RotationUtils;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 // TODO: Implement a customized excavator hack
 // TODO: Add GUI with number of mined ores and the targeted ore
 @DontSaveState
 public final class OreMinerHack extends Hack
-	implements UpdateListener
-{
-	
-	private int mineDir = 0;
+        implements UpdateListener {
 
-	private final SliderSetting range =
-		new SliderSetting("Search Range", 20, 5, 200, 1, ValueDisplay.INTEGER);
+    private final SliderSetting range =
+            new SliderSetting("Search Range", 20, 5, 200, 1, ValueDisplay.INTEGER);
+    private final CheckboxSetting yRange = new CheckboxSetting("(Experimental) Also mine at Y +/- 1", false);
+    private final CheckboxSetting messages = new CheckboxSetting("'Ore found' messages", false);
+    private final SliderSetting coalWeight =
+            new SliderSetting("Coal Weight (0 = Don't Search)", 1, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting ironWeight =
+            new SliderSetting("Iron Weight (0 = Don't Search)", 8, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting goldWeight =
+            new SliderSetting("Gold Weight (0 = Don't Search)", 3, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting diamondWeight =
+            new SliderSetting("Diamond Weight (0 = Don't Search)", 60, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting emeraldWeight =
+            new SliderSetting("Emerald Weight (0 = Don't Search)", 45, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting redstoneWeight =
+            new SliderSetting("Redstone Weight (0 = Don't Search)", 12, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private final SliderSetting lapisWeight =
+            new SliderSetting("Lapis Weight (0 = Don't Search)", 12, 0, 200, 0.05, ValueDisplay.DECIMAL);
+    private int mineDir = 0;
 
-	private final CheckboxSetting yRange = new CheckboxSetting("(Experimental) Also mine at Y +/- 1", false);
+    public OreMinerHack() {
+        super("OreMiner");
+        setCategory(Category.BLOCKS);
+        addSetting(range);
+        addSetting(yRange);
+        addSetting(messages);
 
-	private final CheckboxSetting messages = new CheckboxSetting("'Ore found' messages", false);
-
-	private final SliderSetting coalWeight =
-		new SliderSetting("Coal Weight (0 = Don't Search)", 1, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting ironWeight =
-		new SliderSetting("Iron Weight (0 = Don't Search)", 8, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting goldWeight =
-		new SliderSetting("Gold Weight (0 = Don't Search)", 3, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting diamondWeight =
-		new SliderSetting("Diamond Weight (0 = Don't Search)", 60, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting emeraldWeight =
-		new SliderSetting("Emerald Weight (0 = Don't Search)", 45, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting redstoneWeight =
-		new SliderSetting("Redstone Weight (0 = Don't Search)", 12, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	private final SliderSetting lapisWeight =
-		new SliderSetting("Lapis Weight (0 = Don't Search)", 12, 0, 200, 0.05, ValueDisplay.DECIMAL);
-
-	public OreMinerHack()
-	{
-		super("OreMiner");
-		setCategory(Category.BLOCKS);
-		addSetting(range);
-		addSetting(yRange);
-		addSetting(messages);
-
-		addSetting(coalWeight);
-		addSetting(ironWeight);
-		addSetting(goldWeight);
-		addSetting(diamondWeight);
-		addSetting(emeraldWeight);
-		addSetting(redstoneWeight);
-		addSetting(lapisWeight);
-    }
-    
-    @Override
-    public void onEnable()
-    {
-		WURST.getHackRegistry().autoMineHack.setEnabled(false);
-		WURST.getHackRegistry().excavatorHack.setEnabled(false);
-		WURST.getHackRegistry().nukerHack.setEnabled(false);
-		WURST.getHackRegistry().nukerLegitHack.setEnabled(false);
-		WURST.getHackRegistry().speedNukerHack.setEnabled(false);
-		
-		EVENTS.add(UpdateListener.class, this);
+        addSetting(coalWeight);
+        addSetting(ironWeight);
+        addSetting(goldWeight);
+        addSetting(diamondWeight);
+        addSetting(emeraldWeight);
+        addSetting(redstoneWeight);
+        addSetting(lapisWeight);
     }
 
     @Override
-    public void onDisable()
-    {
+    public void onEnable() {
+        WURST.getHackRegistry().autoMineHack.setEnabled(false);
+        WURST.getHackRegistry().excavatorHack.setEnabled(false);
+        WURST.getHackRegistry().nukerHack.setEnabled(false);
+        WURST.getHackRegistry().nukerLegitHack.setEnabled(false);
+        WURST.getHackRegistry().speedNukerHack.setEnabled(false);
+
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
         EVENTS.remove(UpdateListener.class, this);
-		WURST.getHackRegistry().excavatorHack.setEnabled(false);
+        WURST.getHackRegistry().excavatorHack.setEnabled(false);
     }
 
     @Override
-    public void onUpdate()
-    {
-		boolean isExcavating = WURST.getHackRegistry().excavatorHack.isEnabled();
-		if(!isExcavating) {
-			BlockPos eyesBlock = new BlockPos(RotationUtils.getEyesPos());
-			int blockRange = (int)Math.ceil(range.getValue());
-			
-			List<BlockPos> blocks = getBlockStream(eyesBlock, blockRange)
-				.filter(this::isOre)
-				.sorted(Comparator.comparingDouble(this::oreWeight))
-				.collect(Collectors.toList());
-			
-			if(blocks.isEmpty()) {
-				ChatUtils.message("Can't find more ores in range!");
-				setEnabled(false);
-				return;
-			}
-			
-			BlockPos target = blocks.get(0);
+    public void onUpdate() {
+        boolean isExcavating = WURST.getHackRegistry().excavatorHack.isEnabled();
+        if (!isExcavating) {
+            BlockPos eyesBlock = new BlockPos(RotationUtils.getEyesPos());
+            int blockRange = (int) Math.ceil(range.getValue());
 
-			// mineDir 0: mine in x direction with start at player pos
-			// mineDir 1: mine in z direction with end at block pos
-			// mineDir 2: mine in y direction
-			if(mineDir == 0) {
-				if(messages.isChecked()) sendOreFoundMessage(target);
-				BlockPos end = new BlockPos(target.getX(), eyesBlock.getY()-1, eyesBlock.getZ());
-				WURST.getHackRegistry().excavatorHack.enableWithArea(eyesBlock, end);
-			} else if(mineDir == 1) {
-				BlockPos start = new BlockPos(target.getX(), eyesBlock.getY(), eyesBlock.getZ());
-				BlockPos end = new BlockPos(target.getX(), eyesBlock.getY()-1, target.getZ());
-				WURST.getHackRegistry().excavatorHack.enableWithArea(start, end);
-			} else if(yRange.isChecked() && mineDir == 2) {
-				BlockPos start = new BlockPos(target.getX(), eyesBlock.getY()-(eyesBlock.getY()>target.getY()?0:1), target.getZ());
-				WURST.getHackRegistry().excavatorHack.enableWithArea(start, target);
-			}
+            List<BlockPos> blocks = getBlockStream(eyesBlock, blockRange)
+                    .filter(this::isOre)
+                    .sorted(Comparator.comparingDouble(this::oreWeight))
+                    .collect(Collectors.toList());
 
-			mineDir = (++mineDir)%(yRange.isChecked()?3:2);
-		}
-	}
+            if (blocks.isEmpty()) {
+                ChatUtils.message("Can't find more ores in range!");
+                setEnabled(false);
+                return;
+            }
 
-	private boolean isOre(BlockPos pos)
-	{
-		Block block = BlockUtils.getBlock(pos);
-		
-		if(!(block instanceof OreBlock)) return false;
-		if(block == Blocks.COAL_ORE && coalWeight.getValue() != 0.0) return true;
-		if(block == Blocks.IRON_ORE && ironWeight.getValue() != 0.0) return true;
-		if(block == Blocks.GOLD_ORE && goldWeight.getValue() != 0.0) return true;
-		if(block == Blocks.DIAMOND_ORE && diamondWeight.getValue() != 0.0) return true;
-		if(block == Blocks.EMERALD_ORE && emeraldWeight.getValue() != 0.0) return true;
-		if(block == Blocks.REDSTONE_ORE && redstoneWeight.getValue() != 0.0) return true;
-		if(block == Blocks.LAPIS_ORE && lapisWeight.getValue() != 0.0) return true;
-		
-		return false;
-	}
+            BlockPos target = blocks.get(0);
 
-	private double oreWeight(BlockPos pos)
-	{
-		Block block = BlockUtils.getBlock(pos);
-		Vec3d eyesVec = RotationUtils.getEyesPos().subtract(0.5, 0.5, 0.5);
-		Vec3d posVec = Vec3d.ofCenter(pos);
-		double dist = eyesVec.squaredDistanceTo(posVec);
-		double weight = 1.0;
-		
-		if(block instanceof OreBlock) {
-			if(block == Blocks.COAL_ORE) weight = coalWeight.getValue();
-			if(block == Blocks.IRON_ORE) weight = ironWeight.getValue();
-			if(block == Blocks.GOLD_ORE) weight = goldWeight.getValue();
-			if(block == Blocks.DIAMOND_ORE) weight = diamondWeight.getValue();
-			if(block == Blocks.EMERALD_ORE) weight = emeraldWeight.getValue();
-			if(block == Blocks.REDSTONE_ORE) weight = redstoneWeight.getValue();
-			if(block == Blocks.LAPIS_ORE) weight = lapisWeight.getValue();
-		}
-		if(weight <= 0.0) weight = 1.0;
-		return dist/weight;
-	}
+            // mineDir 0: mine in x direction with start at player pos
+            // mineDir 1: mine in z direction with end at block pos
+            // mineDir 2: mine in y direction
+            if (mineDir == 0) {
+                if (messages.isChecked()) sendOreFoundMessage(target);
+                BlockPos end = new BlockPos(target.getX(), eyesBlock.getY() - 1, eyesBlock.getZ());
+                WURST.getHackRegistry().excavatorHack.enableWithArea(eyesBlock, end);
+            } else if (mineDir == 1) {
+                BlockPos start = new BlockPos(target.getX(), eyesBlock.getY(), eyesBlock.getZ());
+                BlockPos end = new BlockPos(target.getX(), eyesBlock.getY() - 1, target.getZ());
+                WURST.getHackRegistry().excavatorHack.enableWithArea(start, end);
+            } else if (yRange.isChecked() && mineDir == 2) {
+                BlockPos start = new BlockPos(target.getX(), eyesBlock.getY() - (eyesBlock.getY() > target.getY() ? 0 : 1), target.getZ());
+                WURST.getHackRegistry().excavatorHack.enableWithArea(start, target);
+            }
 
-	private Stream<BlockPos> getBlockStream(BlockPos center, int range)
-	{
-		BlockPos min = center.add(-range, yRange.isChecked()?-2:-1, -range);
-		BlockPos max = center.add(range, yRange.isChecked()?1:0, range);
-		
-		return BlockUtils.getAllInBox(min, max).stream();
-	}
+            mineDir = (++mineDir) % (yRange.isChecked() ? 3 : 2);
+        }
+    }
 
-	private void sendOreFoundMessage(BlockPos pos) {
-		Block block = BlockUtils.getBlock(pos);
-		Vec3d eyesVec = RotationUtils.getEyesPos().subtract(0.5, 0.5, 0.5);
-		Vec3d posVec = Vec3d.ofCenter(pos);
-		double dist = (int)Math.ceil(eyesVec.distanceTo(posVec));
-		String oreName = "";
-		
-		if(block == Blocks.COAL_ORE) oreName = "Coal";
-		if(block == Blocks.IRON_ORE) oreName = "Iron";
-		if(block == Blocks.GOLD_ORE) oreName = "Gold";
-		if(block == Blocks.DIAMOND_ORE) oreName = "Diamond";
-		if(block == Blocks.EMERALD_ORE) oreName = "Emerald";
-		if(block == Blocks.REDSTONE_ORE) oreName = "Redstone";
-		if(block == Blocks.LAPIS_ORE) oreName = "Lapis";
+    private boolean isOre(BlockPos pos) {
+        Block block = BlockUtils.getBlock(pos);
 
-		ChatUtils.message("Found " + oreName + " Ore " + dist + " blocks away");
-	}
+        if (!(block instanceof OreBlock)) return false;
+        if (block == Blocks.COAL_ORE && coalWeight.getValue() != 0.0) return true;
+        if (block == Blocks.IRON_ORE && ironWeight.getValue() != 0.0) return true;
+        if (block == Blocks.GOLD_ORE && goldWeight.getValue() != 0.0) return true;
+        if (block == Blocks.DIAMOND_ORE && diamondWeight.getValue() != 0.0) return true;
+        if (block == Blocks.EMERALD_ORE && emeraldWeight.getValue() != 0.0) return true;
+        if (block == Blocks.REDSTONE_ORE && redstoneWeight.getValue() != 0.0) return true;
+        if (block == Blocks.LAPIS_ORE && lapisWeight.getValue() != 0.0) return true;
+
+        return false;
+    }
+
+    private double oreWeight(BlockPos pos) {
+        Block block = BlockUtils.getBlock(pos);
+        Vec3d eyesVec = RotationUtils.getEyesPos().subtract(0.5, 0.5, 0.5);
+        Vec3d posVec = Vec3d.ofCenter(pos);
+        double dist = eyesVec.squaredDistanceTo(posVec);
+        double weight = 1.0;
+
+        if (block instanceof OreBlock) {
+            if (block == Blocks.COAL_ORE) weight = coalWeight.getValue();
+            if (block == Blocks.IRON_ORE) weight = ironWeight.getValue();
+            if (block == Blocks.GOLD_ORE) weight = goldWeight.getValue();
+            if (block == Blocks.DIAMOND_ORE) weight = diamondWeight.getValue();
+            if (block == Blocks.EMERALD_ORE) weight = emeraldWeight.getValue();
+            if (block == Blocks.REDSTONE_ORE) weight = redstoneWeight.getValue();
+            if (block == Blocks.LAPIS_ORE) weight = lapisWeight.getValue();
+        }
+        if (weight <= 0.0) weight = 1.0;
+        return dist / weight;
+    }
+
+    private Stream<BlockPos> getBlockStream(BlockPos center, int range) {
+        BlockPos min = center.add(-range, yRange.isChecked() ? -2 : -1, -range);
+        BlockPos max = center.add(range, yRange.isChecked() ? 1 : 0, range);
+
+        return BlockUtils.getAllInBox(min, max).stream();
+    }
+
+    private void sendOreFoundMessage(BlockPos pos) {
+        Block block = BlockUtils.getBlock(pos);
+        Vec3d eyesVec = RotationUtils.getEyesPos().subtract(0.5, 0.5, 0.5);
+        Vec3d posVec = Vec3d.ofCenter(pos);
+        double dist = (int) Math.ceil(eyesVec.distanceTo(posVec));
+        String oreName = "";
+
+        if (block == Blocks.COAL_ORE) oreName = "Coal";
+        if (block == Blocks.IRON_ORE) oreName = "Iron";
+        if (block == Blocks.GOLD_ORE) oreName = "Gold";
+        if (block == Blocks.DIAMOND_ORE) oreName = "Diamond";
+        if (block == Blocks.EMERALD_ORE) oreName = "Emerald";
+        if (block == Blocks.REDSTONE_ORE) oreName = "Redstone";
+        if (block == Blocks.LAPIS_ORE) oreName = "Lapis";
+
+        ChatUtils.message("Found " + oreName + " Ore " + dist + " blocks away");
+    }
 
 }

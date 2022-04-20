@@ -22,106 +22,93 @@ import net.wurstclient.settings.EnumSetting;
 
 @SearchTags({"AutoSneaking"})
 public final class SneakHack extends Hack
-	implements PreMotionListener, PostMotionListener
-{
-	private final EnumSetting<SneakMode> mode = new EnumSetting<>("Mode",
-		"§lPacket§r mode makes it look like you're\n"
-			+ "sneaking without slowing you down.\n"
-			+ "§lLegit§r mode actually makes you sneak.",
-		SneakMode.values(), SneakMode.LEGIT);
-	
-	public SneakHack()
-	{
-		super("Sneak");
-		setCategory(Category.MOVEMENT);
-		addSetting(mode);
-	}
-	
-	@Override
-	public String getRenderName()
-	{
-		return getName() + " [" + mode.getSelected() + "]";
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(PreMotionListener.class, this);
-		EVENTS.add(PostMotionListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(PreMotionListener.class, this);
-		EVENTS.remove(PostMotionListener.class, this);
-		
-		switch(mode.getSelected())
-		{
-			case LEGIT:
-			IKeyBinding sneakKey = (IKeyBinding)WurstClient.MC_GAME_OPTIONS.getSneakKey();
-			((KeyBinding)sneakKey).setPressed(sneakKey.isActallyPressed());
-			break;
-			
-			case PACKET:
-			sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
-			break;
-		}
-	}
-	
-	@Override
-	public void onPreMotion()
-	{
-		KeyBinding sneakKey = WurstClient.MC_GAME_OPTIONS.getSneakKey();
-		
-		switch(mode.getSelected())
-		{
-			case LEGIT:
-			sneakKey.setPressed(true);
-			break;
-			
-			case PACKET:
-			sneakKey.setPressed(((IKeyBinding)sneakKey).isActallyPressed());
-			sendSneakPacket(Mode.PRESS_SHIFT_KEY);
-			sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
-			break;
-		}
-	}
-	
-	@Override
-	public void onPostMotion()
-	{
-		if(mode.getSelected() != SneakMode.PACKET)
-			return;
-		
-		sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
-		sendSneakPacket(Mode.PRESS_SHIFT_KEY);
-	}
-	
-	private void sendSneakPacket(Mode mode)
-	{
-		ClientPlayerEntity player = MC.player;
-		ClientCommandC2SPacket packet =
-			new ClientCommandC2SPacket(player, mode);
-		player.networkHandler.sendPacket(packet);
-	}
-	
-	private enum SneakMode
-	{
-		PACKET("Packet"),
-		LEGIT("Legit");
-		
-		private final String name;
-		
-		private SneakMode(String name)
-		{
-			this.name = name;
-		}
-		
-		@Override
-		public String toString()
-		{
-			return name;
-		}
-	}
+        implements PreMotionListener, PostMotionListener {
+    private final EnumSetting<SneakMode> mode = new EnumSetting<>("Mode",
+            "§lPacket§r mode makes it look like you're\n"
+                    + "sneaking without slowing you down.\n"
+                    + "§lLegit§r mode actually makes you sneak.",
+            SneakMode.values(), SneakMode.LEGIT);
+
+    public SneakHack() {
+        super("Sneak");
+        setCategory(Category.MOVEMENT);
+        addSetting(mode);
+    }
+
+    @Override
+    public String getRenderName() {
+        return getName() + " [" + mode.getSelected() + "]";
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(PreMotionListener.class, this);
+        EVENTS.add(PostMotionListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(PreMotionListener.class, this);
+        EVENTS.remove(PostMotionListener.class, this);
+
+        switch (mode.getSelected()) {
+            case LEGIT:
+                IKeyBinding sneakKey = (IKeyBinding) WurstClient.MC_GAME_OPTIONS.getSneakKey();
+                ((KeyBinding) sneakKey).setPressed(sneakKey.isActallyPressed());
+                break;
+
+            case PACKET:
+                sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
+                break;
+        }
+    }
+
+    @Override
+    public void onPreMotion() {
+        KeyBinding sneakKey = WurstClient.MC_GAME_OPTIONS.getSneakKey();
+
+        switch (mode.getSelected()) {
+            case LEGIT:
+                sneakKey.setPressed(true);
+                break;
+
+            case PACKET:
+                sneakKey.setPressed(((IKeyBinding) sneakKey).isActallyPressed());
+                sendSneakPacket(Mode.PRESS_SHIFT_KEY);
+                sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
+                break;
+        }
+    }
+
+    @Override
+    public void onPostMotion() {
+        if (mode.getSelected() != SneakMode.PACKET)
+            return;
+
+        sendSneakPacket(Mode.RELEASE_SHIFT_KEY);
+        sendSneakPacket(Mode.PRESS_SHIFT_KEY);
+    }
+
+    private void sendSneakPacket(Mode mode) {
+        ClientPlayerEntity player = MC.player;
+        ClientCommandC2SPacket packet =
+                new ClientCommandC2SPacket(player, mode);
+        player.networkHandler.sendPacket(packet);
+    }
+
+    private enum SneakMode {
+        PACKET("Packet"),
+        LEGIT("Legit");
+
+        private final String name;
+
+        private SneakMode(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 }

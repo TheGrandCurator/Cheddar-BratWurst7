@@ -18,45 +18,40 @@ import net.wurstclient.settings.SliderSetting;
 import net.wurstclient.settings.SliderSetting.ValueDisplay;
 
 @SearchTags({"miley cyrus", "twerk", "wrecking ball"})
-public final class MileyCyrusHack extends Hack implements UpdateListener
-{
-	private final SliderSetting twerkSpeed = new SliderSetting("Twerk speed",
-		"I came in like a wreeecking baaall...", 5, 1, 10, 1,
-		ValueDisplay.INTEGER);
-	
-	private int timer;
-	
-	public MileyCyrusHack()
-	{
-		super("MileyCyrus");
-		setCategory(Category.FUN);
-		addSetting(twerkSpeed);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		timer = 0;
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-		
-		KeyBinding sneak = WurstClient.MC_GAME_OPTIONS.getSneakKey();
-		sneak.setPressed(((IKeyBinding)sneak).isActallyPressed());
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		timer++;
-		if(timer < 10 - twerkSpeed.getValueI())
-			return;
+public final class MileyCyrusHack extends Hack implements UpdateListener {
+    private final SliderSetting twerkSpeed = new SliderSetting("Twerk speed",
+            "I came in like a wreeecking baaall...", 5, 1, 10, 1,
+            ValueDisplay.INTEGER);
 
-		WurstClient.MC_GAME_OPTIONS.getSneakKey().setPressed(!WurstClient.MC_GAME_OPTIONS.getSneakKey().isPressed());
-		timer = -1;
-	}
+    private int timer;
+
+    public MileyCyrusHack() {
+        super("MileyCyrus");
+        setCategory(Category.FUN);
+        addSetting(twerkSpeed);
+    }
+
+    @Override
+    public void onEnable() {
+        timer = 0;
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+
+        KeyBinding sneak = WurstClient.MC_GAME_OPTIONS.getSneakKey();
+        sneak.setPressed(((IKeyBinding) sneak).isActallyPressed());
+    }
+
+    @Override
+    public void onUpdate() {
+        timer++;
+        if (timer < 10 - twerkSpeed.getValueI())
+            return;
+
+        WurstClient.MC_GAME_OPTIONS.getSneakKey().setPressed(!WurstClient.MC_GAME_OPTIONS.getSneakKey().isPressed());
+        timer = -1;
+    }
 }

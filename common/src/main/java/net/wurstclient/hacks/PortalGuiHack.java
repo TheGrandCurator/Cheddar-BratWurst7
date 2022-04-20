@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"portal gui"})
-public final class PortalGuiHack extends Hack
-{
-	public PortalGuiHack()
-	{
-		super("PortalGUI");
-		setCategory(Category.OTHER);
-	}
-	
-	// See ClientPlayerEntityMixin.beforeUpdateNausea()
+public final class PortalGuiHack extends Hack {
+    public PortalGuiHack() {
+        super("PortalGUI");
+        setCategory(Category.OTHER);
+    }
+
+    // See ClientPlayerEntityMixin.beforeUpdateNausea()
 }

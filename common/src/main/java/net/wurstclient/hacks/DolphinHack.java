@@ -15,35 +15,30 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"AutoSwim", "auto swim"})
-public final class DolphinHack extends Hack implements UpdateListener
-{
-	public DolphinHack()
-	{
-		super("Dolphin");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(UpdateListener.class, this);
-		WURST.getHackRegistry().fishHack.setEnabled(false);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		ClientPlayerEntity player = MC.player;
-		if(!player.isWet() || player.isSneaking())
-			return;
-		
-		Vec3d velocity = player.getVelocity();
-		player.setVelocity(velocity.add(0,0.04,0));
-	}
+public final class DolphinHack extends Hack implements UpdateListener {
+    public DolphinHack() {
+        super("Dolphin");
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(UpdateListener.class, this);
+        WURST.getHackRegistry().fishHack.setEnabled(false);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        ClientPlayerEntity player = MC.player;
+        if (!player.isWet() || player.isSneaking())
+            return;
+
+        Vec3d velocity = player.getVelocity();
+        player.setVelocity(velocity.add(0, 0.04, 0));
+    }
 }

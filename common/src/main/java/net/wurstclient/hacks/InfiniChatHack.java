@@ -12,11 +12,9 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"infini chat", "InfiniteChat", "infinite chat"})
-public final class InfiniChatHack extends Hack
-{
-	public InfiniChatHack()
-	{
-		super("InfiniChat");
-		setCategory(Category.CHAT);
-	}
+public final class InfiniChatHack extends Hack {
+    public InfiniChatHack() {
+        super("InfiniChat");
+        setCategory(Category.CHAT);
+    }
 }

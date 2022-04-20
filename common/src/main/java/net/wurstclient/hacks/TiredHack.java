@@ -12,35 +12,30 @@ import net.wurstclient.Category;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
-public final class TiredHack extends Hack implements UpdateListener
-{
-	public TiredHack()
-	{
-		super("Tired");
-		setCategory(Category.FUN);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		// disable incompatible derps
-		WURST.getHackRegistry().derpHack.setEnabled(false);
-		WURST.getHackRegistry().headRollHack.setEnabled(false);
-		
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		MC.player.networkHandler.sendPacket(
-			new PlayerMoveC2SPacket.LookAndOnGround(MC.player.getYaw(),
-				MC.player.age % 100, MC.player.isOnGround()));
-	}
+public final class TiredHack extends Hack implements UpdateListener {
+    public TiredHack() {
+        super("Tired");
+        setCategory(Category.FUN);
+    }
+
+    @Override
+    public void onEnable() {
+        // disable incompatible derps
+        WURST.getHackRegistry().derpHack.setEnabled(false);
+        WURST.getHackRegistry().headRollHack.setEnabled(false);
+
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        MC.player.networkHandler.sendPacket(
+                new PlayerMoveC2SPacket.LookAndOnGround(MC.player.getYaw(),
+                        MC.player.age % 100, MC.player.isOnGround()));
+    }
 }

@@ -15,32 +15,27 @@ import net.wurstclient.hack.Hack;
 import net.wurstclient.mixinterface.IKeyBinding;
 
 @SearchTags({"auto walk"})
-public final class AutoWalkHack extends Hack implements UpdateListener
-{
-	public AutoWalkHack()
-	{
-		super("AutoWalk");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-		
-		KeyBinding forwardKey = WURST.MC_GAME_OPTIONS.getForwardKey();
-		forwardKey.setPressed(((IKeyBinding)forwardKey).isActallyPressed());
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		WURST.MC_GAME_OPTIONS.getForwardKey().setPressed(true);
-	}
+public final class AutoWalkHack extends Hack implements UpdateListener {
+    public AutoWalkHack() {
+        super("AutoWalk");
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+
+        KeyBinding forwardKey = WURST.MC_GAME_OPTIONS.getForwardKey();
+        forwardKey.setPressed(((IKeyBinding) forwardKey).isActallyPressed());
+    }
+
+    @Override
+    public void onUpdate() {
+        WURST.MC_GAME_OPTIONS.getForwardKey().setPressed(true);
+    }
 }

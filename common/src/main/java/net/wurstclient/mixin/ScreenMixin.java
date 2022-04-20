@@ -32,6 +32,8 @@ public abstract class ScreenMixin extends AbstractParentElement
 	@Final
 	private List<Drawable> drawables;
 
+	@Shadow public abstract void renderBackground(MatrixStack matrices, int vOffset);
+
 	@Inject(at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/client/network/ClientPlayerEntity;sendChatMessage(Ljava/lang/String;)V",
 			ordinal = 0),
@@ -54,8 +56,10 @@ public abstract class ScreenMixin extends AbstractParentElement
 			cancellable = true)
 	public void onRenderBackground(MatrixStack matrices, CallbackInfo ci)
 	{
-		if(WurstClient.INSTANCE.getHackRegistry().noBackgroundHack.isEnabled() && WurstClient.isInGame)
+		if(WurstClient.INSTANCE.getHackRegistry().noBackgroundHack.isEnabled() && WurstClient.isInGame){
+			this.renderBackground(matrices, 50);
 			ci.cancel();
+		}
 	}
 
 	@Override

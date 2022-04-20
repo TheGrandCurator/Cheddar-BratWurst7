@@ -23,66 +23,59 @@ import net.wurstclient.settings.SliderSetting;
 import net.wurstclient.settings.SliderSetting.ValueDisplay;
 
 @SearchTags({"arrow dmg", "ArrowDamage", "arrow damage"})
-public final class ArrowDmgHack extends Hack implements StopUsingItemListener
-{
-	private final SliderSetting packets = new SliderSetting("Packets",
-		"description.wurst.setting.arrowdmg.packets", 200, 2, 2000, 2,
-		ValueDisplay.INTEGER);
-	
-	private final CheckboxSetting yeetTridents =
-		new CheckboxSetting("Trident yeet mode",
-			"description.wurst.setting.arrowdmg.trident_yeet_mode", false);
-	
-	public ArrowDmgHack()
-	{
-		super("ArrowDMG");
-		setCategory(Category.COMBAT);
-		addSetting(packets);
-		addSetting(yeetTridents);
-	}
-	
-	@Override
-	protected void onEnable()
-	{
-		EVENTS.add(StopUsingItemListener.class, this);
-	}
-	
-	@Override
-	protected void onDisable()
-	{
-		EVENTS.remove(StopUsingItemListener.class, this);
-	}
-	
-	@Override
-	public void onStopUsingItem()
-	{
-		ClientPlayerEntity player = MC.player;
-		ClientPlayNetworkHandler netHandler = player.networkHandler;
-		
-		if(!isValidItem(player.getMainHandStack().getItem()))
-			return;
-		
-		netHandler.sendPacket(
-			new ClientCommandC2SPacket(player, Mode.START_SPRINTING));
-		
-		double x = player.getX();
-		double y = player.getY();
-		double z = player.getZ();
-		
-		for(int i = 0; i < packets.getValueI() / 2; i++)
-		{
-			netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x,
-				y - 1e-10, z, true));
-			netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x,
-				y + 1e-10, z, false));
-		}
-	}
-	
-	private boolean isValidItem(Item item)
-	{
-		if(yeetTridents.isChecked() && item == Items.TRIDENT)
-			return true;
-		
-		return item == Items.BOW;
-	}
+public final class ArrowDmgHack extends Hack implements StopUsingItemListener {
+    private final SliderSetting packets = new SliderSetting("Packets",
+            "description.wurst.setting.arrowdmg.packets", 200, 2, 2000, 2,
+            ValueDisplay.INTEGER);
+
+    private final CheckboxSetting yeetTridents =
+            new CheckboxSetting("Trident yeet mode",
+                    "description.wurst.setting.arrowdmg.trident_yeet_mode", false);
+
+    public ArrowDmgHack() {
+        super("ArrowDMG");
+        setCategory(Category.COMBAT);
+        addSetting(packets);
+        addSetting(yeetTridents);
+    }
+
+    @Override
+    protected void onEnable() {
+        EVENTS.add(StopUsingItemListener.class, this);
+    }
+
+    @Override
+    protected void onDisable() {
+        EVENTS.remove(StopUsingItemListener.class, this);
+    }
+
+    @Override
+    public void onStopUsingItem() {
+        ClientPlayerEntity player = MC.player;
+        ClientPlayNetworkHandler netHandler = player.networkHandler;
+
+        if (!isValidItem(player.getMainHandStack().getItem()))
+            return;
+
+        netHandler.sendPacket(
+                new ClientCommandC2SPacket(player, Mode.START_SPRINTING));
+
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+
+        for (int i = 0; i < packets.getValueI() / 2; i++) {
+            netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x,
+                    y - 1e-10, z, true));
+            netHandler.sendPacket(new PlayerMoveC2SPacket.PositionAndOnGround(x,
+                    y + 1e-10, z, false));
+        }
+    }
+
+    private boolean isValidItem(Item item) {
+        if (yeetTridents.isChecked() && item == Items.TRIDENT)
+            return true;
+
+        return item == Items.BOW;
+    }
 }

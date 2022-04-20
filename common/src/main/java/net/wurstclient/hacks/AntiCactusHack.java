@@ -15,29 +15,24 @@ import net.wurstclient.hack.Hack;
 
 @SearchTags({"NoCactus", "anti cactus", "no cactus"})
 public final class AntiCactusHack extends Hack
-	implements CactusCollisionShapeListener
-{
-	public AntiCactusHack()
-	{
-		super("AntiCactus");
-		setCategory(Category.BLOCKS);
-	}
-	
-	@Override
-	protected void onEnable()
-	{
-		EVENTS.add(CactusCollisionShapeListener.class, this);
-	}
-	
-	@Override
-	protected void onDisable()
-	{
-		EVENTS.remove(CactusCollisionShapeListener.class, this);
-	}
-	
-	@Override
-	public void onCactusCollisionShape(CactusCollisionShapeEvent event)
-	{
-		event.setCollisionShape(VoxelShapes.fullCube());
-	}
+        implements CactusCollisionShapeListener {
+    public AntiCactusHack() {
+        super("AntiCactus");
+        setCategory(Category.BLOCKS);
+    }
+
+    @Override
+    protected void onEnable() {
+        EVENTS.add(CactusCollisionShapeListener.class, this);
+    }
+
+    @Override
+    protected void onDisable() {
+        EVENTS.remove(CactusCollisionShapeListener.class, this);
+    }
+
+    @Override
+    public void onCactusCollisionShape(CactusCollisionShapeEvent event) {
+        event.setCollisionShape(VoxelShapes.fullCube());
+    }
 }

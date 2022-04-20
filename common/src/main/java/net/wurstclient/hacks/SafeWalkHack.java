@@ -17,65 +17,58 @@ import net.wurstclient.mixinterface.IKeyBinding;
 import net.wurstclient.settings.CheckboxSetting;
 
 @SearchTags({"safe walk"})
-public final class SafeWalkHack extends Hack
-{
-	private final CheckboxSetting sneak =
-		new CheckboxSetting("Sneak at edges", "Visibly sneak at edges.", false);
-	
-	private boolean sneaking;
-	
-	public SafeWalkHack()
-	{
-		super("SafeWalk");
-		setCategory(Category.MOVEMENT);
-		addSetting(sneak);
-	}
-	
-	@Override
-	protected void onEnable()
-	{
-		WURST.getHackRegistry().parkourHack.setEnabled(false);
-		sneaking = false;
-	}
-	
-	@Override
-	protected void onDisable()
-	{
-		if(sneaking)
-			setSneaking(false);
-	}
-	
-	public void onClipAtLedge(boolean clipping)
-	{
-		if(!isEnabled() || !sneak.isChecked() || !MC.player.isOnGround())
-		{
-			if(sneaking)
-				setSneaking(false);
-			
-			return;
-		}
-		
-		ClientPlayerEntity player = MC.player;
-		Box bb = player.getBoundingBox();
-		float stepHeight = player.stepHeight;
-		
-		for(double x = -0.05; x <= 0.05; x += 0.05)
-			for(double z = -0.05; z <= 0.05; z += 0.05)
-				if(MC.world.isSpaceEmpty(player, bb.offset(x, -stepHeight, z)))
-					clipping = true;
-				
-		setSneaking(clipping);
-	}
-	
-	private void setSneaking(boolean sneaking)
-	{
-		IKeyBinding sneakKey = (IKeyBinding)WURST.MC_GAME_OPTIONS.getSneakKey();
-		
-		if(sneaking)
-			((KeyBinding)sneakKey).setPressed(true);
-		else
-			((KeyBinding)sneakKey).setPressed(sneakKey.isActallyPressed());
-		
-		this.sneaking = sneaking;
-	}
+public final class SafeWalkHack extends Hack {
+    private final CheckboxSetting sneak =
+            new CheckboxSetting("Sneak at edges", "Visibly sneak at edges.", false);
+
+    private boolean sneaking;
+
+    public SafeWalkHack() {
+        super("SafeWalk");
+        setCategory(Category.MOVEMENT);
+        addSetting(sneak);
+    }
+
+    @Override
+    protected void onEnable() {
+        WURST.getHackRegistry().parkourHack.setEnabled(false);
+        sneaking = false;
+    }
+
+    @Override
+    protected void onDisable() {
+        if (sneaking)
+            setSneaking(false);
+    }
+
+    public void onClipAtLedge(boolean clipping) {
+        if (!isEnabled() || !sneak.isChecked() || !MC.player.isOnGround()) {
+            if (sneaking)
+                setSneaking(false);
+
+            return;
+        }
+
+        ClientPlayerEntity player = MC.player;
+        Box bb = player.getBoundingBox();
+        float stepHeight = player.stepHeight;
+
+        for (double x = -0.05; x <= 0.05; x += 0.05)
+            for (double z = -0.05; z <= 0.05; z += 0.05)
+                if (MC.world.isSpaceEmpty(player, bb.offset(x, -stepHeight, z)))
+                    clipping = true;
+
+        setSneaking(clipping);
+    }
+
+    private void setSneaking(boolean sneaking) {
+        IKeyBinding sneakKey = (IKeyBinding) WURST.MC_GAME_OPTIONS.getSneakKey();
+
+        if (sneaking)
+            ((KeyBinding) sneakKey).setPressed(true);
+        else
+            ((KeyBinding) sneakKey).setPressed(sneakKey.isActallyPressed());
+
+        this.sneaking = sneaking;
+    }
 }

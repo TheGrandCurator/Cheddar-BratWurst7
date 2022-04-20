@@ -12,14 +12,12 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"snow shoe", "SnowJesus", "snow jesus", "NoSnowSink",
-	"no snow sink", "AntiSnowSink", "anti snow sink"})
-public final class SnowShoeHack extends Hack
-{
-	public SnowShoeHack()
-	{
-		super("SnowShoe");
-		setCategory(Category.MOVEMENT);
-	}
-	
-	// See PowderSnowBlockMixin
+        "no snow sink", "AntiSnowSink", "anti snow sink"})
+public final class SnowShoeHack extends Hack {
+    public SnowShoeHack() {
+        super("SnowShoe");
+        setCategory(Category.MOVEMENT);
+    }
+
+    // See PowderSnowBlockMixin
 }

@@ -14,34 +14,29 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"jet pack", "AirJump", "air jump"})
-public final class JetpackHack extends Hack implements UpdateListener
-{
-	public JetpackHack()
-	{
-		super("Jetpack");
-		
-		setCategory(Category.MOVEMENT);
-	}
-	
-	@Override
-	public void onEnable()
-	{
-		WURST.getHackRegistry().creativeFlightHack.setEnabled(false);
-		WURST.getHackRegistry().flightHack.setEnabled(false);
-		
-		EVENTS.add(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onDisable()
-	{
-		EVENTS.remove(UpdateListener.class, this);
-	}
-	
-	@Override
-	public void onUpdate()
-	{
-		if(WurstClient.MC_GAME_OPTIONS.getJumpKey().isPressed())
-			MC.player.jump();
-	}
+public final class JetpackHack extends Hack implements UpdateListener {
+    public JetpackHack() {
+        super("Jetpack");
+
+        setCategory(Category.MOVEMENT);
+    }
+
+    @Override
+    public void onEnable() {
+        WURST.getHackRegistry().creativeFlightHack.setEnabled(false);
+        WURST.getHackRegistry().flightHack.setEnabled(false);
+
+        EVENTS.add(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onDisable() {
+        EVENTS.remove(UpdateListener.class, this);
+    }
+
+    @Override
+    public void onUpdate() {
+        if (WurstClient.MC_GAME_OPTIONS.getJumpKey().isPressed())
+            MC.player.jump();
+    }
 }

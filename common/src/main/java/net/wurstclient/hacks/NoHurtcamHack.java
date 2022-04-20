@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"no hurtcam", "no hurt cam"})
-public final class NoHurtcamHack extends Hack
-{
-	public NoHurtcamHack()
-	{
-		super("NoHurtcam");
-		setCategory(Category.RENDER);
-	}
-	
-	// See GameRendererMixin.onBobViewWhenHurt()
+public final class NoHurtcamHack extends Hack {
+    public NoHurtcamHack() {
+        super("NoHurtcam");
+        setCategory(Category.RENDER);
+    }
+
+    // See GameRendererMixin.onBobViewWhenHurt()
 }

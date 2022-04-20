@@ -12,13 +12,11 @@ import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
 
 @SearchTags({"name tags"})
-public final class NameTagsHack extends Hack
-{
-	public NameTagsHack()
-	{
-		super("NameTags");
-		setCategory(Category.RENDER);
-	}
-	
-	// See EntityRendererMixin.wurstRenderLabelIfPresent()
+public final class NameTagsHack extends Hack {
+    public NameTagsHack() {
+        super("NameTags");
+        setCategory(Category.RENDER);
+    }
+
+    // See EntityRendererMixin.wurstRenderLabelIfPresent()
 }
