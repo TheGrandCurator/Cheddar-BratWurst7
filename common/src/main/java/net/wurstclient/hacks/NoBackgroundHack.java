@@ -10,24 +10,34 @@ package net.wurstclient.hacks;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.hack.Hack;
+import net.wurstclient.settings.CheckboxSetting;
+import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.settings.SliderSetting;
+import net.wurstclient.util.CyclingButtonWidget;
 
 @SearchTags({"no background", "NoGuiBackground", "no gui background",
         "NoGradient", "no gradient"})
 public final class NoBackgroundHack extends Hack {
-    private final SliderSetting transparency = new SliderSetting("Transparency",
+    private final CheckboxSetting noShading = new CheckboxSetting("Perfectly Clear", true);
+    private final SliderSetting transparency = new SliderSetting("transparency",
             "Set background transparency",
-            0, 0, 1, 0.05, SliderSetting.ValueDisplay.DECIMAL);
+            108, 0, 171, 1, SliderSetting.ValueDisplay.INTEGER);
+
+
 
     public NoBackgroundHack() {
         super("NoBackground");
         setCategory(Category.RENDER);
+        addSetting(noShading);
         addSetting(transparency);
     }
 
-    public SliderSetting getTransparency() {
-        return transparency;
+    public int getTransparency() {
+        return transparency.getValueI();
     }
 
+    public boolean isNoShading() {
+        return noShading.isChecked();
+    }
     // See ScreenMixin.onRenderBackground()
 }
